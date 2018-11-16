@@ -6,7 +6,7 @@ Run DIS-Map which starts websocket server receiving and multicasting DIS message
 
 Run a webserver on the local folder of "index.html".
 
-An example of pyton with http.server module:
+An example of python with http.server module:
 Type
 `py -m http.server` in the local folder of "index.html".
 
