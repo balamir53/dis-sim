@@ -1,5 +1,5 @@
 // global variables and usual functions
-//var box;
+
 var scene, camera, cameraFirst, cameraCount, controls;
 var cameraDefaultPos;
 var objects = [];
