@@ -10,4 +10,6 @@ An example of python with http.server module:
 Type
 `py -m http.server` in the local folder of "index.html".
 
-Open the web browser and goto "localhost:8000".
+Open the web browser and go to "localhost:8000".
+
+Open another **window** and go to "localhost:8000/index_remote.html".
