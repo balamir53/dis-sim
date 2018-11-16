@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>RTS</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <style>
+            onepix-imgloader {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                z-index: 1000;
+            }
+
+            /*hide the second element in the loading container (first element is the leading img)*/
+            .loading-container > *:not(.onepix-imgloader) {
+                filter:alpha(opacity=0);
+                -moz-opacity:0;
+                -khtml-opacity:0;
+                opacity:0;
+            }
+
+            .loading-container {
+
+                position:absolute;
+                top:50%;
+                left:50%;
+
+            }
+
+
+        </style>
+        <script type="text/javascript" src="js/three.js"></script>
+        <script type="text/javascript" src="sounds/sounds.js"></script>
+        <script src="js/base64-binary.js"></script>
+        <script type="text/javascript" src="js/dis.js"></script>
+
+        <script src="shaders/FXAAShader.js"></script>
+        <script src="shaders/CopyShader.js"></script>
+        <script src="shaders/ConvolutionShader.js"></script>
+        <script src="shaders/FilmShader.js"></script>
+        <script src="shaders/ColorifyShader.js"></script>
+
+        <script src="postprocessing/EffectComposer.js"></script>
+        <script src="postprocessing/RenderPass.js"></script>
+        <script src="postprocessing/ShaderPass.js"></script>
+        <script src="postprocessing/MaskPass.js"></script>
+        <script src="postprocessing/BloomPass.js"></script>
+        <script src="postprocessing/FilmPass.js"></script>
+
+        <script src="fonts/helvetiker_regular.typeface.js"></script>
+        <script type="text/javascript" src="js/dat.gui.min.js"></script>
+        <script type="text/javascript" src="js/orbitControls.js"></script>
+        <script type="text/javascript" src="js/spriteParticleSystem.js"></script>
+        <script type="text/javascript" src="js/TerrainShaders.js"></script>
+        <script type="text/javascript" src="js/TerrainMaterial.js"></script>
+        <script type="text/javascript" src="js/skyShader.js"></script>
+        <script type="text/javascript" src="js/terrain.js"></script>
+        <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+        <script type="text/javascript" src="js/heartcode-canvasloader-min.js"></script>
+        <script type="text/javascript" src="js/main_remote.js"></script>
+        <script type="text/javascript" src="js/entities_remote.js"></script>
+        <script type="text/javascript" src="js/menu.js"></script>
+        <script type="text/javascript" src="js/stats.min.js"></script>
+
+        <script type="text/javascript">
+
+            //webserver
+            /** Where the web page goes to contact a websocket server. NOTE: this points
+             * at localhost (the host where the page is loaded) by default. This means
+             * you have to have a websocket server running on localhost, which is fine
+             * for development. In a production environment it's more likely that you
+             * want to point this at a shared server, such as "ws://track.nps.edu" or
+             * "ws://172.20.82.112"
+             * 
+             * @type String
+             */
+            var WEBSOCKET_URL = "ws://localhost:8282";
+
+            /** The TCP-like websocket we use for communications */
+            var websocket;
+
+            networkSetup(WEBSOCKET_URL); // Set up the network, etc.
+
+            // Every few seconds send an update of our units
+            // heartbeat function is in main.js
+            window.setInterval(heartbeat, 100);
+
+            // global variables are in main.js 
+            var init = function () {
+                initSounds();
+                initScene();
+                initSky();
+
+                //to display loading animation before it's ready
+                $(document).ready(function () {
+                    if ($('.loading-container').length) {
+
+                        //to show loading animation
+                        $imgloader = $('.loading-container');
+                        $loadingimg = $('<div id="canvasloader-container" class="onepix-imgloader"></div>');
+
+                        $imgloader.prepend($loadingimg);
+
+//          canvasloader code
+                        var cl = new CanvasLoader('canvasloader-container');
+                        cl.setColor('#00bbff'); // default is '#000000'
+                        cl.setShape('spiral');
+                        cl.setDiameter(100); // default is 40
+                        cl.setDensity(75); // default is 40
+                        cl.setRange(0.7); // default is 1.3
+                        cl.setSpeed(3); // default is 2
+                        cl.setFPS(22); // default is 24
+                        cl.show(); // Hidden by default
+
+                    }
+
+                });
+
+                initTerrain();
+
+// Win text
+
+                var textGeo = new THREE.TextGeometry('red wins', {
+                    font: 'helvetiker',
+                    size: 15,
+                    height: 10
+                });
+                textMesh = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: 0xff0000, shading: THREE.FlatShading}));
+                scene.add(textMesh);
+                textMesh.visible = false;
+                var textGeo1 = new THREE.TextGeometry('blue wins', {
+                    font: 'helvetiker',
+                    size: 15,
+                    height: 10
+                });
+                textMesh1 = new THREE.Mesh(textGeo1, new THREE.MeshPhongMaterial({color: 0x0000ff, shading: THREE.FlatShading}));
+                scene.add(textMesh1);
+                textMesh1.visible = false
+
+//post processing for night vision
+
+                var renderModel = new THREE.RenderPass(scene, camera);
+                var effectBloom = new THREE.BloomPass(0.25);
+                var effectFilm = new THREE.FilmPass(0.5, 0.125, 2048, false);
+
+                effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+                var effectColorify1 = new THREE.ShaderPass(THREE.ColorifyShader);
+
+                effectColorify1.uniforms[ 'color' ].value.setRGB(1, 0.8, 0.8);
+
+
+                var width = window.innerWidth || 2;
+                var height = window.innerHeight || 2;
+
+                effectFXAA.uniforms[ 'resolution' ].value.set(1 / width, 1 / height);
+
+                effectFilm.renderToScreen = true;
+
+                composer = new THREE.EffectComposer(renderer);
+
+                composer.addPass(renderModel);
+                composer.addPass(effectFXAA);
+                composer.addPass(effectColorify1);
+                composer.addPass(effectBloom);
+                composer.addPass(effectFilm);
+//
+
+                var container = document.getElementById('container');
+
+                //stats
+                stats = new Stats();
+                stats.domElement.style.position = 'absolute';
+                stats.domElement.style.bottom = '0px';
+                //stats.domElement.style.zIndex = 100;
+                container.appendChild(stats.domElement);
+
+                //gui
+                var gui = new dat.GUI();
+                controller.init(gui);
+                cameraDefaultPos = new THREE.Vector3(-106, 50, 450);
+                camera.position.copy(cameraDefaultPos);
+                camera.lookAt(new THREE.Vector3());
+
+                cameraFirst.position.set(0, 10, -10);
+                cameraFirst.rotation.y = Math.PI / 2;
+
+                controls = new THREE.OrbitControls(camera, myCanvas);
+                controls.maxPolarAngle = Math.PI * 0.495;
+                controls.noPan = !controller.pan;
+
+                // raycaster and plane
+
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+
+                // Lights
+                var ambientLight = new THREE.AmbientLight(0x606060);
+                scene.add(ambientLight);
+
+                var directionalLight = new THREE.DirectionalLight(0xffffff);
+                directionalLight.position.set(1, 0.75, 0.5).normalize();
+                scene.add(directionalLight);
+
+                myCanvas.addEventListener('mousedown', onDocumentMouseDown, false);
+                window.onkeydown = onKeyDown;
+                window.onkeyup = onKeyUp;
+
+
+                controller.pause = true;
+
+                addTree(-39, 0, 317, manager);
+                addTree(-58, 0, 326, manager);
+                addTree(-48, 0, 336, manager);
+                addTree(-68, 0, 339, manager);
+                addTree(117, 0, -63, manager);
+                addTree(119, 0, -82, manager);
+                addTree(126, 0, -73, manager);
+
+                //create entities
+
+                //reds
+//                new Howitzer('red', scene, new THREE.Vector3(-19.5122, 50.7565, -287.8049), manager, entitiesBoundingBox, selectables);
+//                new Howitzer('red', scene, new THREE.Vector3(0, 52.8751, -287.8049), manager, entitiesBoundingBox, selectables);
+//                new Howitzer('red', scene, new THREE.Vector3(19.5122, 50.7565, -287.8049), manager, entitiesBoundingBox, selectables);
+//                new Howitzer('red', scene, new THREE.Vector3(-9.7561, 55.1563, -278.0488), manager, entitiesBoundingBox, selectables);
+//                new Howitzer('red', scene, new THREE.Vector3(9.7561, 55.1563, -278.0488), manager, entitiesBoundingBox, selectables);
+//                //new Tank('red', scene, new THREE.Vector3(-19.5122, 57.3350, -239.0244), manager, entitiesBoundingBox, selectables);
+//                new Tank('red', scene, new THREE.Vector3(0, 58.7506, -239.0244), manager, entitiesBoundingBox, selectables);
+//                new Tank('red', scene, new THREE.Vector3(19.5122, 57.3350, -239.0244), manager, entitiesBoundingBox, selectables);
+//                //blues
+//                new Tank('blue', scene, new THREE.Vector3(-175, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Tank('blue', scene, new THREE.Vector3(-146, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Tank('blue', scene, new THREE.Vector3(-117, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Howitzer('blue', scene, new THREE.Vector3(-117, 0, 287), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Howitzer('blue', scene, new THREE.Vector3(-175, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Howitzer('blue', scene, new THREE.Vector3(-39, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Infantry('blue', scene, new THREE.Vector3(-87, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Infantry('blue', scene, new THREE.Vector3(-58, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                new Infantry('blue', scene, new THREE.Vector3(-19, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+
+                //experimento uav
+                //new Uav('red', scene, new THREE.Vector3(19.5122, 77.3350, -250.0244), manager, entitiesBoundingBox, selectables);
+
+
+                var clock = new THREE.Clock();
+                
+                var randomX = Math.floor((Math.random() * 100) + 20);
+                var randomApplicationNr = Math.floor((Math.random() * 50) + 50);
+
+                var renderLoop = function () {
+
+                    //wait plane to load
+                    if (plane && oneTime) {
+
+                        //blues
+                        new Tank('blue', scene, new THREE.Vector3(-randomX, 0, 150), manager, entitiesBoundingBox, selectables, Math.PI,randomApplicationNr);
+
+                        oneTime = false;
+                    }
+                    stats.begin();
+//                    checkWinner(); better in die() function
+
+                    var dt = clock.getDelta();
+                    
+                    // uav cloud
+//                    if (remoteIDDictionary["25"]) {
+//                        var myUav = remoteIDDictionary["25"];
+//                        if (myUav.barrelCloud && myUav.barrelCloud.cloud.visible)
+//                            myUav.barrelCloud.update(dt);
+//                    }
+
+                    for (i = 0; i < tanks.length; ++i) {
+                        tanks[i].updateLines(dt);
+                    }
+
+                    if (!controller.pause) {
+                        for (i = 0; i < tanks.length; ++i) {
+                            tanks[i].update(dt);
+                        }
+                        sunUpdate(dt);
+                    }
+
+
+                    controls.update();
+                    
+
+
+
+                    if (cameraCount % 2 === 0) {
+
+                        if (!sunUp && controller.nightVision)
+                        {
+                            composer.render(0.05);
+
+                        }
+                        else
+                            renderer.render(scene, camera);
+                    }
+                    if (cameraCount % 2 === 1) {
+                        if (!sunUp && controller.nightVision)
+                        {
+                            composer.render(0.05);
+
+                        }
+                        else
+                            renderer.render(scene, cameraFirst);
+
+                    }
+                    stats.end();
+                    requestAnimationFrame(renderLoop);
+
+                };
+
+                renderLoop();
+
+            };
+            window.onload = init;
+
+        </script>
+    </head>
+    <body>
+        <div class = "loading-container"  >
+
+
+        </div>
+        <div id="container"> 
+
+            <canvas style="width:100%;height:95%;border:1px gray solid;"></canvas>
+        </div>
+
+
+        <script src="js/jquery-ui.js"></script>
+        <link rel=stylesheet href="css/jquery-ui.css" />
+        <link rel=stylesheet href="css/info.css"/>
+        <script src="js/info.js"></script>
+        <div id="infoButton"></div>
+        <div id="infoBox" title="Simulation Information">
+            INSTRUCTIONS
+
+            <p>Left Mouse --- rotate scene //
+                select blue units //
+                assign goal for selected unit</p>
+
+            <p>Shift key + Left Mouse --- assign additional way points to selected unit</p>
+            <p>Ctrl key  + Left Mouse --- rotate scene without assigning any goals</p>
+
+            <p>Right Mouse --- pan the camera // 
+                deselect units</p>
+            <p>Ctrl key + Right Mouse --- pan camera without deselecting units</p>
+
+
+        </div>
+
+
+    </body>
+</html>

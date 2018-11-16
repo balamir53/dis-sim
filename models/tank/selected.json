@@ -1,0 +1,39 @@
+{
+    "vertices": [-1.21622,0.019342,4.21247,-1.21622,0.019342,-2.5599,1.26256,0.019342,-2.5599,1.26256,0.019342,4.21247,-1.21622,2.2819,4.21247,-1.21622,2.2819,-2.5599,1.26256,2.2819,-2.5599,1.26256,2.2819,4.21247],
+    "materials": [{
+        "colorDiffuse": [0.64,0.64,0.64],
+        "colorAmbient": [0.64,0.64,0.64],
+        "mapDiffuse": "selected.png",
+        "opacity": 1.0,
+        "transparent": true,
+        "shading": "phong",
+        "depthWrite": true,
+        "blending": "NormalBlending",
+        "mapDiffuseAnisotropy": 1,
+        "specularCoef": 50,
+        "colorEmissive": [0,0,0],
+        "DbgIndex": 0,
+        "mapDiffuseRepeat": [1,1],
+        "visible": true,
+        "DbgColor": 15658734,
+        "mapDiffuseWrap": ["RepeatWrapping","RepeatWrapping"],
+        "DbgName": "Material.003",
+        "wireframe": false,
+        "colorSpecular": [0.5,0.5,0.5],
+        "depthTest": true
+    }],
+    "normals": [-0.577349,-0.577349,-0.577349,-0.577349,-0.577349,0.577349,-0.577349,0.577349,0.577349,-0.577349,0.577349,-0.577349,0.577349,0.577349,-0.577349,0.577349,-0.577349,-0.577349,0.577349,0.577349,0.577349,0.577349,-0.577349,0.577349],
+    "name": "Cube.001Geometry.1",
+    "metadata": {
+        "vertices": 8,
+        "version": 3,
+        "generator": "io_three",
+        "type": "Geometry",
+        "uvs": 1,
+        "faces": 6,
+        "materials": 1,
+        "normals": 8
+    },
+    "uvs": [[0,0,1,0,1,1,0,1]],
+    "faces": [43,1,0,4,5,0,2,3,0,1,0,1,2,3,43,5,6,2,1,0,0,1,2,3,3,4,5,0,43,6,7,3,2,0,0,1,2,3,4,6,7,5,43,0,3,7,4,0,2,3,0,1,1,7,6,2,43,0,1,2,3,0,0,1,2,3,1,0,5,7,43,7,6,5,4,0,0,1,2,3,6,4,3,2]
+}
