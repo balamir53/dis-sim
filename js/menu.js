@@ -17,7 +17,7 @@ var controller = {
     pan:true,
     music:true,
     sound:true,
-    nightVision:true,
+    nightVision:false,
     stopUnit : function(){
         tank.wayPoints =[];
        
@@ -56,11 +56,11 @@ var controller = {
                 if(cameraFirst.parent)
                     THREE.SceneUtils.detach(cameraFirst,cameraFirst.parent,scene);
                 THREE.SceneUtils.attach(cameraFirst,scene,tank.mesh);
-                cameraFirst.position.set(0,70,-70);
+                cameraFirst.position.set(0,5,-30);
                 
 //                camera.position.copy(tank.mesh.localToWorld(new THREE.Vector3(0,30,-60)));
                 //cameraFirst.lookAt(tank.mesh.localToWorld(new THREE.Vector3(0,0,30)));
-                cameraFirst.lookAt(new THREE.Vector3(0,0,30));
+                cameraFirst.lookAt(new THREE.Vector3(0,0,300));
             }else {cameraCount+=1;
 //                camera.position.copy(cameraDefaultPos); camera.lookAt(new THREE.Vector3());
             }
