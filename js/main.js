@@ -106,8 +106,9 @@ function networkSetup()
                     return;
 
                 if (remoteIDDictionary[entityID] === undefined) {
-                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
-
+//                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
+                    var localCoordinates = disMessage.entityLocation;
+                    
                     if (entityID === "25") {
                         remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
                     } else {
@@ -121,7 +122,8 @@ function networkSetup()
                 }
                 else {
 
-                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
+//                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
+                    var localCoordinates = disMessage.entityLocation;
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     if (entityID !== "25") {
                         var myRemote = remoteIDDictionary[entityID];
@@ -129,16 +131,17 @@ function networkSetup()
                         var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
                         if (dist > remoteDistance) {
 
-                            myRemote.remoteLocation.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
-
-                            myRemote.remoteRay.set(myRemote.remoteLocation.clone().setY(50), toEarth);
-
-                            var collision = myRemote.remoteRay.intersectObject(plane);
-
-                            if (collision[0]) {
-                                myRemote.wayPoints = [];
-                                myRemote.wayPoints.push(collision[0].point);
-                            }
+//                            myRemote.remoteLocation.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
+//
+//                            myRemote.remoteRay.set(myRemote.remoteLocation.clone().setY(50), toEarth);
+//
+//                            var collision = myRemote.remoteRay.intersectObject(plane);
+//
+//                            if (collision[0]) {
+//                                myRemote.wayPoints = [];
+//                                myRemote.wayPoints.push(collision[0].point);
+//                            }
+                              myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                         }
                     } else {
                         var remoteOrientation = new THREE.Vector3();
@@ -238,25 +241,36 @@ function heartbeat()
 {
 
     //on every heartbeat, send one of the entities
-    var index = heartBeatCounter % (tanks.length);
-    var myEntity = tanks[index];
+    //    var index = heartBeatCounter % (tanks.length);
+    //    var myEntity = tanks[index];
+
+    //consider only blue selectable tanks
+    var myEntity = tanks[8];
+    
+    
 
     heartBeatCounter++;
 
     if (!myEntity || !myEntity.mesh || myEntity.remote ||myEntity.state === 'dead')
         return;
+    
+    //leave the coordinate systems conversion for a while
 
-    var range = new dis.RangeCoordinates(36.6, -121.9, 1);
+//    var range = new dis.RangeCoordinates(36.6, -121.9, 1);
     // three.js coordinate axis differ from ENU default
-    var disPosition = range.ENUtoECEF(-myEntity.pos.x, myEntity.pos.z, myEntity.pos.y);
+//    var disPosition = range.ENUtoECEF(-myEntity.pos.x, myEntity.pos.z, myEntity.pos.y);
 
     // bump timestamp
     myEntity.espdu.timestamp++;
 
-    myEntity.espdu.entityLocation.x = disPosition.x;
-    myEntity.espdu.entityLocation.y = disPosition.y;
-    myEntity.espdu.entityLocation.z = disPosition.z;
+//    myEntity.espdu.entityLocation.x = disPosition.x;
+//    myEntity.espdu.entityLocation.y = disPosition.y;
+//    myEntity.espdu.entityLocation.z = disPosition.z;
 
+    myEntity.espdu.entityLocation.x = myEntity.pos.x;
+    myEntity.espdu.entityLocation.y = myEntity.pos.y;
+    myEntity.espdu.entityLocation.z = myEntity.pos.z;
+  
     // Marshal out the PDU that represents the local browser's position
     // to the IEEE DIS binary format. We allocate a big buffer to write,
     // and if the actual data occupies less than that, trim to fit.
