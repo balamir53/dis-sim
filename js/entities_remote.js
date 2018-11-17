@@ -137,7 +137,7 @@ var entityProto = {
             that.pos = that.chassisMesh.position;
             that.wayPoints.push(that.pos);
             collid.push(that.boundingBox);
-            if (that.side === "blue" ||!that.remote)
+            if (that.side === "blue" && !that.remote)
                 selectables.push(that.boundingBox);
 
             scene.add(that.chassisMesh);
