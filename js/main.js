@@ -237,7 +237,7 @@ function networkSetup()
 function heartbeat()
 {
 
-    //on every heartbeat, send one the entities
+    //on every heartbeat, send one of the entities
     var index = heartBeatCounter % (tanks.length);
     var myEntity = tanks[index];
 
