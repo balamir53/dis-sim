@@ -17,7 +17,7 @@ Open another **window** and go to "localhost:8000/index_remote.html".
 ## Things to improve
 Fire PDUs
 
-Single Player Controls
+Single Player Controls, and markings
 
 Disconnect timeout and dead tanks
 
