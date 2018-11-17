@@ -220,32 +220,6 @@
                 addTree(119, 0, -82, manager);
                 addTree(126, 0, -73, manager);
 
-                //create entities
-
-                //reds
-//                new Howitzer('red', scene, new THREE.Vector3(-19.5122, 50.7565, -287.8049), manager, entitiesBoundingBox, selectables);
-//                new Howitzer('red', scene, new THREE.Vector3(0, 52.8751, -287.8049), manager, entitiesBoundingBox, selectables);
-//                new Howitzer('red', scene, new THREE.Vector3(19.5122, 50.7565, -287.8049), manager, entitiesBoundingBox, selectables);
-//                new Howitzer('red', scene, new THREE.Vector3(-9.7561, 55.1563, -278.0488), manager, entitiesBoundingBox, selectables);
-//                new Howitzer('red', scene, new THREE.Vector3(9.7561, 55.1563, -278.0488), manager, entitiesBoundingBox, selectables);
-//                //new Tank('red', scene, new THREE.Vector3(-19.5122, 57.3350, -239.0244), manager, entitiesBoundingBox, selectables);
-//                new Tank('red', scene, new THREE.Vector3(0, 58.7506, -239.0244), manager, entitiesBoundingBox, selectables);
-//                new Tank('red', scene, new THREE.Vector3(19.5122, 57.3350, -239.0244), manager, entitiesBoundingBox, selectables);
-//                //blues
-//                new Tank('blue', scene, new THREE.Vector3(-175, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Tank('blue', scene, new THREE.Vector3(-146, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Tank('blue', scene, new THREE.Vector3(-117, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Howitzer('blue', scene, new THREE.Vector3(-117, 0, 287), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Howitzer('blue', scene, new THREE.Vector3(-175, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Howitzer('blue', scene, new THREE.Vector3(-39, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Infantry('blue', scene, new THREE.Vector3(-87, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Infantry('blue', scene, new THREE.Vector3(-58, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-//                new Infantry('blue', scene, new THREE.Vector3(-19, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-
-                //experimento uav
-                //new Uav('red', scene, new THREE.Vector3(19.5122, 77.3350, -250.0244), manager, entitiesBoundingBox, selectables);
-
-
                 var clock = new THREE.Clock();
 
                 var renderLoop = function () {
@@ -262,18 +236,18 @@
                         new Tank('red', scene, new THREE.Vector3(0, 58.7506, -239.0244), manager, entitiesBoundingBox, selectables);
                         new Tank('red', scene, new THREE.Vector3(19.5122, 57.3350, -239.0244), manager, entitiesBoundingBox, selectables);
                         //blues
-                        new Tank('blue', scene, new THREE.Vector3(-175, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Tank('blue', scene, new THREE.Vector3(-146, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Tank('blue', scene, new THREE.Vector3(-117, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-                        myHow = new Howitzer('blue', scene, new THREE.Vector3(-117, 0, 287), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Howitzer('blue', scene, new THREE.Vector3(-175, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Howitzer('blue', scene, new THREE.Vector3(-39, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Infantry('blue', scene, new THREE.Vector3(-87, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Infantry('blue', scene, new THREE.Vector3(-58, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
-                        new Infantry('blue', scene, new THREE.Vector3(-19, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Tank('blue', scene, new THREE.Vector3(-175, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+                        new Tank('blue', scene, new THREE.Vector3(0, 0, 50), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Tank('blue', scene, new THREE.Vector3(-117, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        myHow = new Howitzer('blue', scene, new THREE.Vector3(-117, 0, 287), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Howitzer('blue', scene, new THREE.Vector3(-175, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Howitzer('blue', scene, new THREE.Vector3(-39, 0, 297), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Infantry('blue', scene, new THREE.Vector3(-87, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Infantry('blue', scene, new THREE.Vector3(-58, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
+//                        new Infantry('blue', scene, new THREE.Vector3(-19, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
 
                         //experimento uav
-                        //new Uav('red', scene, new THREE.Vector3(19.5122, 77.3350, -250.0244), manager, entitiesBoundingBox, selectables);
+//                        new Uav('red', scene, new THREE.Vector3(19.5122, 77.3350, -250.0244), manager, entitiesBoundingBox, selectables);
 
                         oneTime = false;
                     }
