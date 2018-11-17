@@ -143,6 +143,7 @@ function networkSetup()
 //                            }
                               //try to teleport the tank every time
                               myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
+                              myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
                         }
                     } else {
                         remoteIDDictionary["25"].updateUAV(newRemoteLocation);
@@ -261,6 +262,11 @@ function heartbeat()
     myEntity.espdu.entityLocation.x = myEntity.pos.x;
     myEntity.espdu.entityLocation.y = myEntity.pos.y;
     myEntity.espdu.entityLocation.z = myEntity.pos.z;
+    
+     //add also orientation info
+    myEntity.espdu.entityOrientation.phi = myEntity.chassisMesh.rotation.x;
+    myEntity.espdu.entityOrientation.psi = myEntity.chassisMesh.rotation.y;
+    myEntity.espdu.entityOrientation.theta = myEntity.chassisMesh.rotation.z;
 
     // Marshal out the PDU that represents the local browser's position
     // to the IEEE DIS binary format. We allocate a big buffer to write,
