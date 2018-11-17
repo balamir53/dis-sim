@@ -15,8 +15,8 @@ Open the web browser and go to "localhost:8000".
 Open another **window** and go to "localhost:8000/index_remote.html".
 
 ## Things to improve
-Orientation and fire PDUs
+Fire PDUs
 
-Disconnect timeout tanks
+Disconnect timeout and dead tanks
 
 Enemy only on the server
