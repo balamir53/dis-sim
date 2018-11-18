@@ -137,7 +137,10 @@ var entityProto = {
             //add the name here
             tankName.scale.set(0.25,0.25,0.25);
             tankName.position.y = 3;
-            tankName.position.x = -2;
+            //adjust the position of text to the middle
+            var nameLength = name.toString().length;
+            if (nameLength > 10) nameLength = 10;
+            tankName.position.x = -nameLength/4; 
             that.mesh.add(tankName);
 
             that.pos = that.chassisMesh.position;
