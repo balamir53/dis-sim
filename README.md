@@ -17,7 +17,7 @@ Open another **window** and go to "localhost:8000/index_remote.html".
 ## Things to improve
 Fire PDUs
 
-Single Player Controls, and markings (naming tank in remote app is done)
+Single Player Controls, and markings (naming tank in remote app is done, color info must be included)
 
 Disconnect timeout and dead tanks
 
