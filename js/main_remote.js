@@ -33,7 +33,7 @@ var tank_fireBuffer, cannon_fireBuffer, tank_explosionBuffer, explosionBuffer, m
 
 var winner;
 var won = false;
-var textMesh, textMesh1, text;
+var textMesh, textMesh1, text, tankName;
 
 var composer;
 var effectFXAA;
@@ -297,7 +297,7 @@ manager.onProgress = function (item, loaded, total) {
 };
 manager.onLoad = function () {
     console.log('all items loaded');
-    allItemsLoaded();
+    allItemsLoaded();    
 };
 manager.onError = function () {
     console.log('there has been an error');
