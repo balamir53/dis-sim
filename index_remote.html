@@ -87,7 +87,17 @@
             // Every few seconds send an update of our units
             // heartbeat function is in main.js
             window.setInterval(heartbeat, 50);
-
+            
+            //prompt a form asking user name
+            var name;
+            var rnd = Math.floor((Math.random() * 100));
+            var askName = function(){
+                //This name will be used in the DIS message as marking
+                name = prompt("Please enter your name! (Max 10 ch.)", "Tank"+rnd);
+                return name.substring(0,10);
+            }
+//          askName(); //better ask after everything has been loaded
+            
             // global variables are in main.js 
             var init = function () {
                 initSounds();
@@ -120,7 +130,7 @@
                 });
 
                 initTerrain();
-
+                
 // Win text
 
                 var textGeo = new THREE.TextGeometry('red wins', {
@@ -139,6 +149,17 @@
                 textMesh1 = new THREE.Mesh(textGeo1, new THREE.MeshPhongMaterial({color: 0x0000ff, shading: THREE.FlatShading}));
                 scene.add(textMesh1);
                 textMesh1.visible = false
+                
+                var name = askName();
+                //geometry of tank name
+                var textGeo = new THREE.TextGeometry(name, {
+                    font: 'helvetiker',
+                    size: 3,
+                    height: 2
+                });
+                tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: 0xff0000, shading: THREE.FlatShading}));
+                //scene.add(textMesh);
+                //rather it to the tank
 
 //post processing for night vision
 
