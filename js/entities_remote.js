@@ -133,6 +133,12 @@ var entityProto = {
             that.healthBar = new THREE.Mesh(new THREE.BoxGeometry(2, .2, .2), new THREE.MeshBasicMaterial({color: 0x0000ff}));
             that.healthBar.position.y = 2.5;
             that.mesh.add(that.healthBar);
+            
+            //add the name here
+            tankName.scale.set(0.25,0.25,0.25);
+            tankName.position.y = 3;
+            tankName.position.x = -2;
+            that.mesh.add(tankName);
 
             that.pos = that.chassisMesh.position;
             that.wayPoints.push(that.pos);
