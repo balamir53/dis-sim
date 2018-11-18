@@ -157,7 +157,7 @@
                     size: 3,
                     height: 2
                 });
-                tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: 0xff0000, shading: THREE.FlatShading}));
+                tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: new THREE.Color( Math.random(), Math.random(), Math.random() ), shading: THREE.FlatShading}));
                 //scene.add(textMesh);
                 //rather it to the tank
 
