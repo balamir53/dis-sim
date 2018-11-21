@@ -99,16 +99,26 @@ function networkSetup()
         switch (disMessage.pduType)
         {
             case 1:
-                //console.log("ESPDU");
-                var entityID = JSON.stringify(disMessage.entityID.application);
+                //what to include in the state information other than location
+                //and orientation
+                //marking for sure which has to be handled at the start of the 
+                //simulation
+                //health, namely the general state of the entity
 
+                var entityID = JSON.stringify(disMessage.entityID.application);
+                
+                //needed for the old simulation; no more
                 if (entityID === "43" || entityID === "0" || entityID === "123")
                     return;
-
+                
+                
+                //create the connected entity for the first time
                 if (remoteIDDictionary[entityID] === undefined) {
+                    //coordinate conversion doesnt seem to work precisely
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
                     
+                    //for old sim, UAV will be deprecated
                     if (entityID === "25") {
                         remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
                     } else {
