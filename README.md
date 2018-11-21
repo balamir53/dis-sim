@@ -2,7 +2,7 @@
 ## Requirements
 Either clone and compile the [DIS-Map](https://github.com/mcgredonps/DIS_Map) repository.
 
-Or try [compiled DIS-Map](https://drive.google.com/open?id=1CRl7q_NvQ7hJV-PYNZmWjaGsR-IrJ0Xs) version by typing `java -jar ./DISMap.jar`. 
+Or try [compiled DIS-Map](https://drive.google.com/open?id=1CRl7q_NvQ7hJV-PYNZmWjaGsR-IrJ0Xs) version ([second link](https://www.dropbox.com/s/wewfdabb167wsbv/dismap-dist.rar?dl=0)) by typing `java -jar ./DISMap.jar`. 
 ## Running Sim
 Run DIS-Map which starts websocket server receiving and multicasting DIS messages.
 
