@@ -15,7 +15,7 @@ Open the web browser and go to "localhost:8000".
 Open another **window** and go to "localhost:8000/index_remote.html".
 
 ## Things to improve
-Fire PDUs
+Fire PDU
 
 Single Player Controls, and markings (naming tank in remote app is done, color info must be included)
 
