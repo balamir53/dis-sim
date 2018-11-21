@@ -530,6 +530,8 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
         this.shotAmmo.cube.position.add(ahead0);
 
         if (this.shotAmmo.cube.position.distanceTo(this.shotToTarget.turretMesh.getWorldPosition()) < 1) {
+            //when the missile trajectory ends close to the target
+            //then it is evaulated as a hit for the tank            
             this.hit(this.shotToTarget);
             this.shotAmmo.cube.position.copy(new THREE.Vector3().setFromMatrixPosition(this.barrelMesh.matrixWorld));
             this.shotAmmo.fired = false;
