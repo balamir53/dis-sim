@@ -17,10 +17,8 @@ Open the web browser and go to "localhost:8000".
 Open another **window** and go to "localhost:8000/index_remote.html".
 
 ## Things to improve
-Fire PDU
+Fire PDU, missile will be animation whereas detonation will be broadcast over the network..
 
-Single Player Controls, and markings (naming tank in remote app is done, color info must be included)
+Single Player Controls(always selected for remote app), and markings (naming tank in remote app is done, color info must be included)
 
-Disconnect timeout and dead tanks
-
-Enemy only on the server
+Enemy only on the server, Create remote howitzer.
