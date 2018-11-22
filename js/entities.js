@@ -10,6 +10,8 @@ var entityProto = {
     isAttackedBy: null,
     ray: new THREE.Raycaster(),
     ray1: new THREE.Raycaster(),
+    connectionTimer : null,
+    connectionCounter : 0,
     init: function () {
         this.id = this.nextID;
         entityProto.nextID += 1;
@@ -79,10 +81,14 @@ var entityProto = {
         tanks.push(this);
 
     },
+    connected : function () {
+        var that = this;
+        this.connectionTimer = setInterval(function(){that.connectionCounter++;},100);
+    },
     createESPDU: function (id, side, type) {
         //for dis pdu
         this.espdu = new dis.EntityStatePdu();
-        this.espdu.marking.setMarking(side + type + id);
+        this.espdu.marking.setMarking(side.substring(0,3) + type.substring(0,3) + id);
         // Entity ID
         this.espdu.entityID.site = 53;
         this.espdu.entityID.application = 17;
@@ -346,6 +352,12 @@ var entityProto = {
 
     },
     die: function () {
+        
+        //stop connection timer if any
+        if(this.connectionTimer){
+            clearInterval(this.connectionTimer);
+        }
+        
         checkWinner();
         this.mesh.visible = false;
         if (this.type !== "inf")
@@ -367,6 +379,13 @@ var entityProto = {
 
         if (this.state === 'dead') {
 
+            return;
+        }
+        
+        //check connection status of the remote unit
+        if(this.connectionTimer && this.connectionCounter>20){
+            this.state = 'dead';
+            this.die();
             return;
         }
 
