@@ -104,15 +104,21 @@ function networkSetup()
                 //marking for sure which has to be handled at the start of the 
                 //simulation
                 //health, namely the general state of the entity
-
+                //
+                //
+      
                 var entityID = JSON.stringify(disMessage.entityID.application);
+                
+                //update timestamp here; if it is not likely to receive messages delete it from the simulation
+                // where to check ??
+//                remoteIDDictionary[entityID].espdu.timestamp = disMessage.timestamp;
                 
                 //needed for the old simulation; no more
                 if (entityID === "43" || entityID === "0" || entityID === "123")
                     return;
                 
                 
-                //create the connected entity for the first time
+                //create the connected entity for the first time!!
                 if (remoteIDDictionary[entityID] === undefined) {
                     //coordinate conversion doesnt seem to work precisely
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
@@ -124,7 +130,9 @@ function networkSetup()
                     } else {
                         remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
                     }
-
+                    //this will start counter in the update function to check connection status of the remote units
+                    remoteIDDictionary[entityID].connected();
+                    
                     remoteIDDictionary[entityID].remoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     //remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(-160, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
                     remoteUnitsNumber++;
@@ -132,12 +140,20 @@ function networkSetup()
                 }
                 else {
 
+                    var myRemote = remoteIDDictionary[entityID];          
+                    //update timestamp
+                    myRemote.espdu.timestamp = disMessage.timestamp;
+                    //the remote app may be open for a while
+                    //myRemote.espdu.timestamp++;
+                    //reset the timer
+                    myRemote.connectionCounter = 0;
+                    
+                    
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     if (entityID !== "25") {
-                        var myRemote = remoteIDDictionary[entityID];
-
+                        
                         var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
                         if (dist > remoteDistance) {
 
@@ -253,11 +269,11 @@ function heartbeat()
 {
 
     //on every heartbeat, send one of the entities
-    //    var index = heartBeatCounter % (tanks.length);
-    //    var myEntity = tanks[index];
+        var index = heartBeatCounter % (tanks.length);
+        var myEntity = tanks[index];
 
     //consider only blue selectable tanks
-    var myEntity = tanks[8];
+    //var myEntity = tanks[8];
     
     
 
