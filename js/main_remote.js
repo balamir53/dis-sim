@@ -114,8 +114,23 @@ function networkSetup()
                     } else {
                         if (disMessage.marking.getMarking().substring(0,3)==="blu")
                             remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
-                        else
-                            remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                        else{
+                            switch (disMessage.marking.getMarking().substring(3,6)){
+                                case 'tan':
+                                    remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                    break;
+                                case 'inf':
+                                    remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                    break;
+                                case 'how':
+                                    remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                    break;
+                                default:
+                                    remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                            }
+                            
+                        }
+                            
                         
                     }
 
@@ -294,6 +309,13 @@ function allItemsLoaded() {
     $('.loading-container > *:not(.onepix-imgloader)').fadeTo(8000, 100);
 
     controller.pause = false;
+    //select the tank
+    //tank.selectMesh.visible = true;
+    //switch to first camera
+    cameraCount+=1;
+    THREE.SceneUtils.attach(cameraFirst,scene,tank.mesh);
+    cameraFirst.position.set(0,5,-30);
+    cameraFirst.lookAt(new THREE.Vector3(0,0,300));
 }
 
 manager.onProgress = function (item, loaded, total) {
@@ -650,14 +672,15 @@ function onDocumentMouseDown(event) {
     var planeIntersects = raycaster.intersectObjects(objects);
     var intersects = raycaster.intersectObjects(selectables);
 
-    if (!ctrlPressed && event.button === 2) {
-        tank = null;
-        for (i = 0; i < tanks.length; ++i) {
-            tanks[i].selectMesh.visible = false;
-
-        }
-        return;
-    }
+    //don't deselect it
+//    if (!ctrlPressed && event.button === 2) {
+//        tank = null;
+//        for (i = 0; i < tanks.length; ++i) {
+//            tanks[i].selectMesh.visible = false;
+//
+//        }
+//        return;
+//    }
     if (intersects.length > 0) {
 
         for (i = 0; i < tanks.length; ++i) {
@@ -665,7 +688,8 @@ function onDocumentMouseDown(event) {
 
             if (tanks[i].chassisMesh === intersects[0].object.object) {
                 tank = tanks[i];
-                tank.selectMesh.visible = true;
+                //disable selecting for the remote app
+                //tank.selectMesh.visible = true;
                 //console.log("tank" + tank.id + " selected");
 
             }

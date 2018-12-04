@@ -525,6 +525,9 @@ function sunUpdate(dt) {
 
 }
 function checkWinner() {
+    // for the network app dont check it
+    return;
+    
     for (var i = 0; i < tanks.length; ++i) {
         if (tanks[i].side === "red" && tanks[i].state !== "dead")
             break;

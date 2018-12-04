@@ -135,13 +135,17 @@ var entityProto = {
             that.mesh.add(that.healthBar);
             
             //add the name here
-            tankName.scale.set(0.25,0.25,0.25);
-            tankName.position.y = 3;
-            //adjust the position of text to the middle
-            var nameLength = name.toString().length;
-            if (nameLength > 10) nameLength = 10;
-            tankName.position.x = -nameLength/4; 
-            that.mesh.add(tankName);
+            //but only to the blue ONE
+            if ( that.side === 'blue'){
+                tankName.scale.set(0.25,0.25,0.25);
+                tankName.position.y = 3;
+                //adjust the position of text to the middle
+                var nameLength = name.toString().length;
+                if (nameLength > 10) nameLength = 10;
+                tankName.position.x = -nameLength/4; 
+                that.mesh.add(tankName);
+            }
+
 
             that.pos = that.chassisMesh.position;
             that.wayPoints.push(that.pos);
@@ -508,7 +512,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
     this.model01Url = "models/tank/t72_turret.js";
     this.model02Url = "models/tank/t72_barrel.js";
     this.loadModel(this.model00Url, new THREE.Vector3(loc.x, loc.y, loc.z), this.model01Url, new THREE.Vector3(0.00344, 1.10835, -0.15043), this.model02Url, new THREE.Vector3(0, 0.14, -.70), scene, yRotation, collid, loader, selectables);
-
+    
     this.hit = function (target) {
 
         target.cloud.cloud.position.copy(target.pos);
@@ -526,7 +530,8 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
             target.cloud.cloud.visible = false;
             target.cloud.stop();
         }, 1200);
-
+        
+        //this is where we decrease the health of the damaged unit
         target.health -= this.damage;
         target.isAttackedBy = this.id;
 
@@ -541,7 +546,8 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
         ahead0.multiplyScalar(dt * this.shotAmmo.speed);
         this.shotAmmo.fireDistance += ahead0.length();
         this.shotAmmo.cube.position.add(ahead0);
-
+        
+        //if the ammo gets closer than a minimum distance then assume that it hits the target
         if (this.shotAmmo.cube.position.distanceTo(this.shotToTarget.turretMesh.getWorldPosition()) < 1) {
             this.hit(this.shotToTarget);
             this.shotAmmo.cube.position.copy(new THREE.Vector3().setFromMatrixPosition(this.barrelMesh.matrixWorld));
@@ -550,7 +556,8 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
             this.shotAmmo.fireDistance = 0;
             this.shooting = false;
         }
-
+        
+        
         else if (this.shotAmmo.fireDistance > this.shotAmmo.maxDistance) {
 
             this.shotAmmo.cube.position.copy(new THREE.Vector3().setFromMatrixPosition(this.barrelMesh.matrixWorld));
@@ -591,7 +598,9 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
 
     };
     this.init();
-
+    
+    //assuming that this is the only tank for this remote sim
+    tank = this;
 }
 function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
 
