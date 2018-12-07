@@ -382,6 +382,11 @@ var entityProto = {
 
             return;
         }
+        
+        //adjust the position of the first persone camera here
+        //work on this
+        cameraFirst.position.set(tank.pos.x,tank.pos.y+20,tank.pos.z-100);
+        cameraFirst.lookAt(tank.mesh.localToWorld(new THREE.Vector3(0,0,20)));
 
         if (this.shooting)
             this.shoot(dt);

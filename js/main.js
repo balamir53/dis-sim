@@ -126,9 +126,9 @@ function networkSetup()
                     
                     //for old sim, UAV will be deprecated
                     if (entityID === "25") {
-                        remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
+                        remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
                     } else {
-                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
+                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
                     }
                     //this will start counter in the update function to check connection status of the remote units
                     remoteIDDictionary[entityID].connected();
@@ -303,6 +303,10 @@ function heartbeat()
     myEntity.espdu.entityOrientation.phi = myEntity.chassisMesh.rotation.x;
     myEntity.espdu.entityOrientation.psi = myEntity.chassisMesh.rotation.y;
     myEntity.espdu.entityOrientation.theta = myEntity.chassisMesh.rotation.z;
+    
+    //the health of the enemy should be sent also at every heartbeat
+    //but the dead state should be sent immediately
+    myEntity.setHealthBit(); //it manipulates myEntity.espdu.entityAppearance
   
   
     // Marshal out the PDU that represents the local browser's position

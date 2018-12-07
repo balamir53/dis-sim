@@ -19,6 +19,8 @@ Open another **window** and go to "localhost:8000/index_remote.html".
 ## Things to improve
 Fire PDU, missile will be animation whereas detonation will be broadcast over the network..
 
-Single Player Controls, and markings (naming tank in remote app is done, color info must be included)
+Single Player Controls, and markings (name tanks! how to send it over network?, color info must be included)
 
-Enemy only on the server, Create remote howitzer.
+Assess damage and draw health bars according to these messages
+
+Change camera position for the remote app

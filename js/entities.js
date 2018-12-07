@@ -14,6 +14,7 @@ var entityProto = {
     connectionCounter : 0,
     detonationCounter: 0,
     //detonationSender:null,
+    remote : false,
     init: function () {
         this.id = this.nextID;
         entityProto.nextID += 1;
@@ -87,7 +88,37 @@ var entityProto = {
         var that = this;
         this.connectionTimer = setInterval(function(){that.connectionCounter++;},100);
     },
-    createDPDU:function (location, target){
+    healthBit:function(){
+        //for states that effect entity state appearance
+//        *  Damage           3-4          0=no damage, 1=slight, 2=moderate, 3=destroyed
+        if (this.health < this.armor)//meaning it has taken damage
+        {
+            if (this.health > this.armor*0.75){
+                return 1; //slight damage
+            }
+            else if (this.health >this.armor*0.25){
+                return 2; //moderate damage
+            }else return 3;//destroyed
+        }else return 0; // no damage
+    },
+    setHealthBit:function(){
+        var eA = new dis.DisAppearance(this.espdu.entityAppearance);
+        var damage = this.healthBit();
+        switch (damage){
+            case 1:
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,3);
+                break;
+            case 2:
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,4);
+                break;
+            case 3:
+                eA.entityAppearance=eA.bit_set(eA.entityAppearance,3);
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,4);
+                break;            
+        }
+//        entityAppearance.set_bit(0,)
+    },
+    createDPDU:function (location, targetID){
         
         //create a detonation pdu
         this.dpdu = new dis.DetonationPdu();
@@ -96,11 +127,11 @@ var entityProto = {
         //this is the firing entity
         this.dpdu.firingEntityID = this.espdu.entityID;
 
-//change here
+        //change here
         //define the enemy entity
-        this.dpdu.targetEntityID.site = 53;
-        this.dpdu.targetEntityID.application = 17;
-        this.dpdu.targetEntityID.entity = target;
+        this.dpdu.targetEntityID.site = targetID.site;
+        this.dpdu.targetEntityID.application = targetID.application;
+        this.dpdu.targetEntityID.entity = targetID.entity;
                 
         //location of the detonation
         this.dpdu.locationInWorldCoordinates.x = location.x;
@@ -109,6 +140,7 @@ var entityProto = {
         
     },
     sendDPDU: function (){
+        //to count messages of the same type sent 
         this.detonationCounter++;
         
         //if the message is sent more than x times return
@@ -442,11 +474,27 @@ var entityProto = {
         this.boundingBox.update();
         this.boundingBox.visible = controller.boundingBoxes;
 
+        //update healthbar
         this.healthBar.visible = controller.healthBar;
-        this.healthBar.scale.x = this.health / this.armor;
-        if (this.health / this.armor < .9)
+        if(!this.remote)
+            this.healthBar.scale.x = this.health / this.armor;
+        else{//drawing healthbar of the remote unit
+            //check if it is set in onmessage
+            switch(this.espdu.entityAppearance){
+                case 8: //third bit is set to 1 meaning slight damage
+                    this.healthBar.scale.x = 0.75;
+                    break;
+                case 16: //forth bit to 1 moderate damage
+                    this.healthBar.scale.x = 0.50;
+                    break;
+                case 24: //third and forth bits to 1 almost destroyed
+                    this.healthBar.scale.x = 0.25;
+                    break;                          
+            }
+        }
+        if (this.health / this.armor < .99)
             this.healthBar.material.color.setHex(0Xffff00);
-        if (this.health / this.armor < .5)
+        if (this.health / this.armor < .25)
             this.healthBar.material.color.setHex(0Xff0000);
 
         //clouds
@@ -533,7 +581,7 @@ var entityProto = {
 
     }
 };
-function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
+function Tank(side, scene, loc, loader, collid, selectables, yRotation, remote) {
 
     this.type = 'tank';
     this.speed = 10.0;
@@ -548,6 +596,8 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.range = 30;
     this.health = this.armor;
     this.damage = 25;
+    
+    this.remote = remote;
 
     this.ammo = [];
     this.ammoNumber = 2;
@@ -579,15 +629,19 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
             target.cloud.cloud.visible = false;
             target.cloud.stop();
         }, 1200);
-
-        //rather than decreasing the health it will send detonation pdu (or pdus)
-        //target.health -= this.damage;
-        //where do we send detonation pdu, in heartbeat?
-        //or do we send it just one time or several times with same timestamp
-        this.createDPDU(target.pos, target.espdu.entityID.entity);
-        this.sendDPDU();
         
         target.isAttackedBy = this.id;
+        //rather than decreasing the health it will send detonation pdu (or pdus)
+        //where do we send detonation pdu, in hearthbeat?
+        //or do we send it just one time or several times with same timestamp
+        if(this.remote) return;
+        if (target.remote){
+            this.createDPDU(target.pos, target.espdu.entityID);
+            this.sendDPDU();
+        }else target.health -= this.damage;
+        
+        
+        
 
     };
     this.shoot = function (dt) {
@@ -654,6 +708,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.init();
 
 }
+//this object will be deprecated
 function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
 
     this.type = 'tank';
@@ -667,6 +722,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.side = side;
 
     this.range = 30;
+    //the health of the remote tank is updated at every entity state message
     this.health = this.armor;
     this.damage = 25;
 
@@ -773,7 +829,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.init();
 
 }
-function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
+function Infantry(side, scene, loc, loader, collid, selectables, yRotation, remote) {
 
     this.type = 'inf';
     this.speed = 15.0;
@@ -790,6 +846,8 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
     this.range = 20;
     this.health = this.armor;
     this.damage = 10;
+    
+    this.remote = remote;
 
     this.barrelCloud = {cloud: new THREE.Object3D()};
     this.barrelCloud.cloud.visible = false;
@@ -869,7 +927,7 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
 
 }
 
-function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
+function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remote) {
 
     this.type = 'how';
     this.speed = 10.0;
@@ -886,6 +944,8 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
     this.health = this.armor;
     this.effectRange = 20;
     this.damage = 25;
+    
+    this.remote = remote;
 
     //engaging and shootin
     this.heightPoint = new THREE.Vector3();
@@ -1067,7 +1127,7 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
     };
     this.init();
 }
-function Uav(side, scene, loc, loader, collid, selectables, yRotation) {
+function Uav(side, scene, loc, loader, collid, selectables, yRotation, remote) {
 
     //remote uav
     this.remote = true;
@@ -1087,6 +1147,8 @@ function Uav(side, scene, loc, loader, collid, selectables, yRotation) {
     this.range = 100;
     this.health = this.armor;
     this.damage = 10;
+    
+    this.remote = remote;
 
     this.barrelCloud = {cloud: new THREE.Object3D()};
     this.barrelCloud.cloud.visible = false;

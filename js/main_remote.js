@@ -47,7 +47,7 @@ var remoteIDDictionary = {};
 var rangeCoordinates = new dis.RangeCoordinates(36.6, -121.9, 1.0);
 var remoteDistance = 3;
 var remoteUnitsNumber = 0;
-var myHow;
+
 //var remoteRay = new THREE.Raycaster();
 //var remoteLocation;
 
@@ -101,55 +101,49 @@ function networkSetup()
             case 1:
                 //console.log("ESPDU");
                 var entityID = JSON.stringify(disMessage.entityID.entity);
+                
+                //this is 17 for the enemy units from the server side
+                //and random app numbers for other clients
+                //there is no control mechanism if two same entity numbers co exist
                 var entityApp = JSON.stringify(disMessage.entityID.application);
-//                if (entityApp === "43" || entityApp === "0" || entityApp === "123")
-//                    return;
                 
                 if (remoteIDDictionary[entityID] === undefined) {
-//                  if (remoteIDDictionary[entityApp] === undefined) {
-//                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
+
                     var localCoordinates = disMessage.entityLocation;
 
-                    if (entityApp === "25") {
-                        remoteIDDictionary[entityApp] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
-                    } else {
-                        if (disMessage.marking.getMarking().substring(0,3)==="blu")
-                            remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
-                        else{
-                            switch (disMessage.marking.getMarking().substring(3,6)){
-                                case 'tan':
-                                    remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
-                                    break;
-                                case 'inf':
-                                    remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
-                                    break;
-                                case 'how':
-                                    remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
-                                    break;
-                                default:
-                                    remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
-                            }
-                            
+                    if (disMessage.marking.getMarking().substring(0,3)==="blu")
+                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
+                    else{
+                        switch (disMessage.marking.getMarking().substring(3,6)){
+                            case 'tan':
+                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                break;
+                            case 'inf':
+                                remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                break;
+                            case 'how':
+                                remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                break;
+                            default:
+                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
                         }
-                            
-                        
-                    }
 
+                    }                     
+                        
+                    
                     remoteIDDictionary[entityID].remoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     //remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(-160, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
                     remoteUnitsNumber++;
-
                 }
                 else {
 
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
-                    if (entityID !== "25") {
-                        var myRemote = remoteIDDictionary[entityID];
+                    var myRemote = remoteIDDictionary[entityID];
 
-                        var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
-                        if (dist > remoteDistance) {
+                    var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
+                    if (dist > remoteDistance) {
 
 //                            myRemote.remoteLocation.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
 //
@@ -161,12 +155,10 @@ function networkSetup()
 //                                myRemote.wayPoints = [];
 //                                myRemote.wayPoints.push(collision[0].point);
 //                            }
-                              //try to teleport the tank every time
-                              myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
-                              myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
-                        }
-                    } else {
-                        remoteIDDictionary["25"].updateUAV(newRemoteLocation);
+                          //try to teleport the tank every time
+                          myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
+                          myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
+
                     }
                 }
                 break;
@@ -176,65 +168,65 @@ function networkSetup()
                 break;
 
             case 3:
-                //console.log("Detonation PDU");
-                //assessDamageToOurEntities(disMessage);
-                //entityLocation
-
-                var entityID = JSON.stringify(disMessage.exerciseID);
-                entityID += 1;
-                if (remoteIDDictionary[entityID] === undefined) {
-                    //remoteIDDictionary[entityID] = new Ammo(251);
-                    remoteIDDictionary[entityID] = "alreadyShot";
-                    oneTime = true;
+                
+                //receiving pdu
+                var shooterID = JSON.stringify(disMessage.firingEntityID.entity);
+                var targetID = JSON.stringify(disMessage.targetEntityID.entity);
+                
+                var shooter = remoteIDDictionary[shooterID];
+                
+                switch(shooter.type){
+                    case 'tank':
+                        //if the shooter tank doesnt hit me than return
+                        if (tank.espdu.entityID.entity !==targetID) return;
+                        
+                        break;
+                    case 'how':
+                        break;
+                    case 'inf':
+                        break;                        
                 }
-                if(remoteIDDictionary[entityID] && oneTime)
-                {   
-                    
-//                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
-                    var localCoordinates = disMessage.entityLocation;
-                    //fix coordinate matching
-                    var localVector = new THREE.Vector3(localCoordinates.x-5, localCoordinates.y-90, localCoordinates.z+5);
-                    var minDist = 100000;
-                    var target;
 
-                    for (var tank in tanks) {
-                        var dist = localVector.distanceTo(tanks[tank].chassisMesh.position);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            target = tanks[tank];
-                        }
-                    }
-
-                    //hittin and cloudin
-//                    target.cloud.cloud.position.copy(target.pos);
-//                    target.cloud.cloud.visible = true;
-//                    target.cloud.start();
-//                    var myUav = remoteIDDictionary["25"];
-//                    myUav.barrelCloud.cloud.position.copy(target.chassisMesh.position);
-//                    myUav.barrelCloud.cloud.visible = true;
-//                    myUav.barrelCloud.start();
-                    myHow.blastCloud.cloud.position.copy(target.chassisMesh.position);
-                    myHow.blastCloud.cloud.visible = true;
-                    myHow.blastCloud.start();
-
-                    //sound
-                    var source = audioContext.createBufferSource(); // creates a sound source
-                    source.buffer = explosionBuffer;
-                    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
-                    if (controller.sound)
-                        source.start(0);
-
-                    setTimeout(function () {
-//                        target.cloud.cloud.visible = false;
-//                        target.cloud.stop();
-                        myHow.blastCloud.cloud.visible = false;
-                        myHow.blastCloud.stop();
-                    }, 1500);
-
-                    target.health -= 200;
-                    //target.isAttackedBy = this.id;
-                    oneTime = false;
-                }
+//                if(remoteIDDictionary[entityID] && oneTime)
+//                {   
+//                    
+////                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
+//                    var localCoordinates = disMessage.entityLocation;
+//                    //fix coordinate matching
+//                    var localVector = new THREE.Vector3(localCoordinates.x-5, localCoordinates.y-90, localCoordinates.z+5);
+//                    var minDist = 100000;
+//                    var target;
+//
+//                    for (var tank in tanks) {
+//                        var dist = localVector.distanceTo(tanks[tank].chassisMesh.position);
+//                        if (dist < minDist) {
+//                            minDist = dist;
+//                            target = tanks[tank];
+//                        }
+//                    }
+//
+//                    myHow.blastCloud.cloud.position.copy(target.chassisMesh.position);
+//                    myHow.blastCloud.cloud.visible = true;
+//                    myHow.blastCloud.start();
+//
+//                    //sound
+//                    var source = audioContext.createBufferSource(); // creates a sound source
+//                    source.buffer = explosionBuffer;
+//                    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
+//                    if (controller.sound)
+//                        source.start(0);
+//
+//                    setTimeout(function () {
+////                        target.cloud.cloud.visible = false;
+////                        target.cloud.stop();
+//                        myHow.blastCloud.cloud.visible = false;
+//                        myHow.blastCloud.stop();
+//                    }, 1500);
+//
+//                    target.health -= 200;
+//                    //target.isAttackedBy = this.id;
+//                    oneTime = false;
+//                }
 
                 break;
 
@@ -314,9 +306,9 @@ function allItemsLoaded() {
     //tank.selectMesh.visible = true;
     //switch to first camera
     cameraCount+=1;
-    THREE.SceneUtils.attach(cameraFirst,scene,tank.mesh);
-    cameraFirst.position.set(0,5,-30);
-    cameraFirst.lookAt(new THREE.Vector3(0,0,300));
+//    THREE.SceneUtils.attach(cameraFirst,scene,tank.mesh);
+//    cameraFirst.position.set(0,5,-30);
+//    cameraFirst.lookAt(new THREE.Vector3(0,0,300));
 }
 
 manager.onProgress = function (item, loaded, total) {
