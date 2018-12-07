@@ -532,7 +532,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
         }, 1200);
         
         //this is where we decrease the health of the damaged unit
-        target.health -= this.damage;
+//        target.health -= this.damage;
         target.isAttackedBy = this.id;
 
     };

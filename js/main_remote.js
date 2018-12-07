@@ -102,10 +102,11 @@ function networkSetup()
                 //console.log("ESPDU");
                 var entityID = JSON.stringify(disMessage.entityID.entity);
                 var entityApp = JSON.stringify(disMessage.entityID.application);
-                if (entityApp === "43" || entityApp === "0" || entityApp === "123")
-                    return;
+//                if (entityApp === "43" || entityApp === "0" || entityApp === "123")
+//                    return;
                 
                 if (remoteIDDictionary[entityID] === undefined) {
+//                  if (remoteIDDictionary[entityApp] === undefined) {
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
 

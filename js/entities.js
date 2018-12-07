@@ -12,6 +12,8 @@ var entityProto = {
     ray1: new THREE.Raycaster(),
     connectionTimer : null,
     connectionCounter : 0,
+    detonationCounter: 0,
+    //detonationSender:null,
     init: function () {
         this.id = this.nextID;
         entityProto.nextID += 1;
@@ -84,6 +86,51 @@ var entityProto = {
     connected : function () {
         var that = this;
         this.connectionTimer = setInterval(function(){that.connectionCounter++;},100);
+    },
+    createDPDU:function (location, target){
+        
+        //create a detonation pdu
+        this.dpdu = new dis.DetonationPdu();
+        //increase the timestamp starting from zero
+        this.dpdu.timestamp++;
+        //this is the firing entity
+        this.dpdu.firingEntityID = this.espdu.entityID;
+
+//change here
+        //define the enemy entity
+        this.dpdu.targetEntityID.site = 53;
+        this.dpdu.targetEntityID.application = 17;
+        this.dpdu.targetEntityID.entity = target;
+                
+        //location of the detonation
+        this.dpdu.locationInWorldCoordinates.x = location.x;
+        this.dpdu.locationInWorldCoordinates.y = location.y;
+        this.dpdu.locationInWorldCoordinates.z = location.z;        
+        
+    },
+    sendDPDU: function (){
+        this.detonationCounter++;
+        
+        //if the message is sent more than x times return
+        var x = 1;
+        if(this.detonationCounter > x){
+//            clearInterval(this.detonationSender);
+            this.detonationCounter = 0;
+            return;
+        }
+        
+        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+        var outputStream = new dis.OutputStream(dataBuffer);
+        this.dpdu.encodeToBinaryDIS(outputStream);
+
+        // Trim to fit
+        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+        websocket.send(trimmedData);
+        
+        //send the same detonation message every 50 ms till to counter
+        var that = this;
+        //this.detonationSender = setInterval(that.sendDPDU(),50);
+        setTimeout(that.sendDPDU(),50);
     },
     createESPDU: function (id, side, type) {
         //for dis pdu
@@ -533,7 +580,13 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation) {
             target.cloud.stop();
         }, 1200);
 
-        target.health -= this.damage;
+        //rather than decreasing the health it will send detonation pdu (or pdus)
+        //target.health -= this.damage;
+        //where do we send detonation pdu, in heartbeat?
+        //or do we send it just one time or several times with same timestamp
+        this.createDPDU(target.pos, target.espdu.entityID.entity);
+        this.sendDPDU();
+        
         target.isAttackedBy = this.id;
 
     };
