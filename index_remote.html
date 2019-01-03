@@ -77,7 +77,8 @@
              * 
              * @type String
              */
-            var WEBSOCKET_URL = "ws://localhost:8282";
+//            var WEBSOCKET_URL = "ws://localhost:8282";
+            var WEBSOCKET_URL = "ws://192.168.0.15:8282";
 
             /** The TCP-like websocket we use for communications */
             var websocket;
@@ -89,13 +90,7 @@
             window.setInterval(heartbeat, 10);
             
             //prompt a form asking user name
-            var name;
             var rnd = Math.floor((Math.random() * 100));
-            var askName = function(){
-                //This name will be used in the DIS message as marking
-                name = prompt("Please enter your name! (Max 10 ch.)", "Tank"+rnd);
-                return name.substring(0,10);
-            }
 //          askName(); //better ask after everything has been loaded
             
             // global variables are in main.js 
@@ -150,14 +145,14 @@
                 scene.add(textMesh1);
                 textMesh1.visible = false
                 
-                var name = askName();
+//                var name = askName();
                 //geometry of tank name
-                var textGeo = new THREE.TextGeometry(name, {
-                    font: 'helvetiker',
-                    size: 3,
-                    height: 2
-                });
-                tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: new THREE.Color( Math.random(), Math.random(), Math.random() ), shading: THREE.FlatShading}));
+//                var textGeo = new THREE.TextGeometry(name, {
+//                    font: 'helvetiker',
+//                    size: 3,
+//                    height: 2
+//                });
+//                tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: new THREE.Color( Math.random(), Math.random(), Math.random() ), shading: THREE.FlatShading}));
                 //scene.add(textMesh);
                 //rather it to the tank
 
@@ -252,8 +247,8 @@
                     if (plane && oneTime) {
 
                         //blues
-//                        new Tank('blue', scene, new THREE.Vector3(-randomX, 0, 150), manager, entitiesBoundingBox, selectables, Math.PI,randomApplicationNr);
-                        new Tank('blue', scene, new THREE.Vector3(50, 0, 150), manager, entitiesBoundingBox, selectables, Math.PI,randomApplicationNr);
+                        new Tank('blue', scene, new THREE.Vector3(-randomX, 0, 150), manager, entitiesBoundingBox, selectables, Math.PI,randomApplicationNr);
+//                        new Tank('blue', scene, new THREE.Vector3(50, 0, 150), manager, entitiesBoundingBox, selectables, Math.PI,randomApplicationNr);
 
                         oneTime = false;
                     }

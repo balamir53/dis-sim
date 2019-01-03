@@ -96,7 +96,7 @@ var entityProto = {
             if (this.health > this.armor*0.75){
                 return 1; //slight damage
             }
-            else if (this.health >this.armor*0.25){
+            else if (this.health >this.armor*0.5){
                 return 2; //moderate damage
             }else return 3;//destroyed
         }else return 0; // no damage
@@ -127,12 +127,13 @@ var entityProto = {
         //this is the firing entity
         this.dpdu.firingEntityID = this.espdu.entityID;
 
-        //change here
-        //define the enemy entity
-        this.dpdu.targetEntityID.site = targetID.site;
-        this.dpdu.targetEntityID.application = targetID.application;
-        this.dpdu.targetEntityID.entity = targetID.entity;
-                
+        if (targetID){
+            //change here
+            //define the enemy entity
+            this.dpdu.targetEntityID.site = targetID.site;
+            this.dpdu.targetEntityID.application = targetID.application;
+            this.dpdu.targetEntityID.entity = targetID.entity;
+        }       
         //location of the detonation
         this.dpdu.locationInWorldCoordinates.x = location.x;
         this.dpdu.locationInWorldCoordinates.y = location.y;
@@ -167,7 +168,7 @@ var entityProto = {
     createESPDU: function (id, side, type) {
         //for dis pdu
         this.espdu = new dis.EntityStatePdu();
-        this.espdu.marking.setMarking(side.substring(0,3) + type.substring(0,3) + id);
+        this.espdu.marking.setMarking(side[0] + type[0] + id);
         // Entity ID
         this.espdu.entityID.site = 53;
         this.espdu.entityID.application = 17;
@@ -462,7 +463,7 @@ var entityProto = {
         }
         
         //check connection status of the remote unit
-        if(this.connectionTimer && this.connectionCounter>20){
+        if(this.connectionTimer && this.connectionCounter>50){
             this.state = 'dead';
             this.die();
             return;
@@ -482,13 +483,18 @@ var entityProto = {
             //check if it is set in onmessage
             switch(this.espdu.entityAppearance){
                 case 8: //third bit is set to 1 meaning slight damage
-                    this.healthBar.scale.x = 0.75;
+                    //this.healthBar.scale.x = 0.75;
+                    this.health = this.armor*0.75;
                     break;
                 case 16: //forth bit to 1 moderate damage
-                    this.healthBar.scale.x = 0.50;
+                      this.health = this.armor*0.5; 
+//                    this.healthBar.scale.x = 0.50;
+//                    this.healthBar.material.color.setHex(0Xffff00);
                     break;
                 case 24: //third and forth bits to 1 almost destroyed
-                    this.healthBar.scale.x = 0.25;
+                    this.health = this.armor*0.25; 
+//                    this.healthBar.scale.x = 0.25;
+//                    this.healthBar.material.color.setHex(0Xff0000);
                     break;                          
             }
         }
@@ -763,7 +769,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
             target.cloud.stop();
         }, 1200);
 
-        target.health -= this.damage;
+//        target.health -= this.damage;
         target.isAttackedBy = this.id;
 
     };
@@ -1034,18 +1040,24 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
 
         }, 2000);
 
+//you dont need to check other entities distance to the target position
+//just send dpdu
+        this.createDPDU(position);
+        this.sendDPDU();
+//        for (var i = 0; i < tanks.length; ++i) {
+//            this.localVariable = position.distanceTo(tanks[i].pos);
+//            if (this.localVariable < this.effectRange) {                
+////                if (target.remote){
+////                    this.createDPDU(target.pos, target.espdu.entityID);
+//                this.createDPDU(target.pos, target.espdu.entityID);
+//                this.sendDPDU();}
+////                }else tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
+//                tanks[i].isAttackedBy = this.id;
+//                //console.log(tanks[i].health)
+//            }
+            if (this.side === "blue")
+                firstBlood = true;
 
-        for (var i = 0; i < tanks.length; ++i) {
-            this.localVariable = position.distanceTo(tanks[i].pos);
-            if (this.localVariable < this.effectRange) {
-                tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
-                tanks[i].isAttackedBy = this.id;
-                if (this.side === "blue")
-                    firstBlood = true;
-                //console.log(tanks[i].health)
-            }
-
-        }
         if (firstBlood) {
             for (var i = 0; i < tanks.length; ++i) {
                 if (tanks[i].side === "red" && tanks[i].type === "how" && tanks[i].range < 200)

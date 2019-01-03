@@ -107,7 +107,7 @@ function networkSetup()
                 //
                 //
       
-                var entityID = JSON.stringify(disMessage.entityID.application);
+                var entityID = JSON.stringify(disMessage.entityID.entity);
                 
                 //update timestamp here; if it is not likely to receive messages delete it from the simulation
                 // where to check ??
@@ -130,6 +130,9 @@ function networkSetup()
                     } else {
                         remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
                     }
+                    //here you should initiate remote tank with the proper variables !!
+                    remoteIDDictionary[entityID].espdu.entityID.entity = entityID;
+                    //
                     //this will start counter in the update function to check connection status of the remote units
                     remoteIDDictionary[entityID].connected();
                     
@@ -169,6 +172,7 @@ function networkSetup()
 //                            }
                               myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                               myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
+                              myRemote.espdu.entityAppearance = disMessage.entityAppearance;
                               
                         }
                     } else {
@@ -267,7 +271,7 @@ function networkSetup()
  */
 function heartbeat()
 {
-
+//    return;
     //on every heartbeat, send one of the entities
         var index = heartBeatCounter % (tanks.length);
         var myEntity = tanks[index];
@@ -307,8 +311,7 @@ function heartbeat()
     //the health of the enemy should be sent also at every heartbeat
     //but the dead state should be sent immediately
     myEntity.setHealthBit(); //it manipulates myEntity.espdu.entityAppearance
-  
-  
+    
     // Marshal out the PDU that represents the local browser's position
     // to the IEEE DIS binary format. We allocate a big buffer to write,
     // and if the actual data occupies less than that, trim to fit.

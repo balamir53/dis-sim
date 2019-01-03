@@ -33,7 +33,8 @@ var tank_fireBuffer, cannon_fireBuffer, tank_explosionBuffer, explosionBuffer, m
 
 var winner;
 var won = false;
-var textMesh, textMesh1, text, tankName;
+var textMesh, textMesh1, text;
+//tankName
 
 var composer;
 var effectFXAA;
@@ -47,6 +48,9 @@ var remoteIDDictionary = {};
 var rangeCoordinates = new dis.RangeCoordinates(36.6, -121.9, 1.0);
 var remoteDistance = 3;
 var remoteUnitsNumber = 0;
+
+var cameraHelpVector = new THREE.Vector3();
+var cameraHelpBody = new THREE.Object3D();
 
 //var remoteRay = new THREE.Raycaster();
 //var remoteLocation;
@@ -93,12 +97,17 @@ function networkSetup()
         //mandrake code is beginning
         // convert from binary to javascript object
         var inputStream = new dis.InputStream(evt.data);
-        var disMessage = new dis.EntityStatePdu();
-        disMessage.initFromBinaryDIS(inputStream);
-
-        switch (disMessage.pduType)
+        inputStream.currentPosition += 2;
+        var pduType = inputStream.readUByte();
+//        var disMessage = new dis.EntityStatePdu();
+//        disMessage.initFromBinaryDIS(inputStream);
+        
+        switch (pduType)
         {
             case 1:
+                inputStream.currentPosition = 0;
+                var disMessage = new dis.EntityStatePdu();
+                disMessage.initFromBinaryDIS(inputStream);
                 //console.log("ESPDU");
                 var entityID = JSON.stringify(disMessage.entityID.entity);
                 
@@ -110,19 +119,20 @@ function networkSetup()
                 if (remoteIDDictionary[entityID] === undefined) {
 
                     var localCoordinates = disMessage.entityLocation;
-
-                    if (disMessage.marking.getMarking().substring(0,3)==="blu")
-                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI);
+                    var marking = disMessage.marking.getMarking();
+//                    remoteIDDictionary[entityID].tankNameStr = marking.split("$").pop();
+                    if (marking.substring(0,1)==="b")
+                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI,marking.split("$").pop());
                     else{
-                        switch (disMessage.marking.getMarking().substring(3,6)){
-                            case 'tan':
+                        switch (marking.substring(1,2)){
+                            case 't':
                                 remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
                                 break;
-                            case 'inf':
+                            case 'i':
                                 remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
                                 break;
-                            case 'how':
-                                remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                            case 'h':
+                                remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables,false,true);
                                 break;
                             default:
                                 remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
@@ -168,22 +178,32 @@ function networkSetup()
                 break;
 
             case 3:
-                
+                inputStream.currentPosition = 0;
+                var disMessage = new dis.DetonationPdu();
+                disMessage.initFromBinaryDIS(inputStream);
                 //receiving pdu
                 var shooterID = JSON.stringify(disMessage.firingEntityID.entity);
                 var targetID = JSON.stringify(disMessage.targetEntityID.entity);
-                
+                                
                 var shooter = remoteIDDictionary[shooterID];
                 
                 switch(shooter.type){
                     case 'tank':
                         //if the shooter tank doesnt hit me than return
-                        if (tank.espdu.entityID.entity !==targetID) return;
-                        
+                        if (tank.espdu.entityID.entity !== targetID) return;
+                        tank.health -= 25; //usual tank damage
                         break;
                     case 'how':
+                        //detonation location
+                        var detLoc = new THREE.Vector3(disMessage.locationInWorldCoordinates.x, disMessage.locationInWorldCoordinates.y,disMessage.locationInWorldCoordinates.z );
+                         //-= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
+                        var damage = 25 * (20 - detLoc.distanceTo(tank.mesh.position)) / 20;
+                        if (damage < 0) damage = 0;
+                        tank.health -= damage;
                         break;
                     case 'inf':
+                        if (tank.espdu.entityID.entity !==targetID) return;
+                        tank.health -= 10; //usual infantry damage
                         break;                        
                 }
 
@@ -234,9 +254,6 @@ function networkSetup()
                 break;
         }
 
-
-
-
     }; // End of onMessage()
 
 
@@ -249,11 +266,11 @@ function networkSetup()
  * an update.
  */
 function heartbeat()
-{
-
+{   
     //on every heartbeat, send one the entities
     var index = heartBeatCounter % (tanks.length);
-    var myEntity = tanks[index];
+//    var myEntity = tanks[index];
+    var myEntity = tank;
 
     heartBeatCounter++;
 
@@ -279,7 +296,11 @@ function heartbeat()
     myEntity.espdu.entityOrientation.phi = myEntity.chassisMesh.rotation.x;
     myEntity.espdu.entityOrientation.psi = myEntity.chassisMesh.rotation.y;
     myEntity.espdu.entityOrientation.theta = myEntity.chassisMesh.rotation.z;
-
+    
+        //the health of the enemy should be sent also at every heartbeat
+    //but the dead state should be sent immediately
+    myEntity.setHealthBit(); //it manipulates myEntity.espdu.entityAppearance
+    
     // Marshal out the PDU that represents the local browser's position
     // to the IEEE DIS binary format. We allocate a big buffer to write,
     // and if the actual data occupies less than that, trim to fit.
@@ -505,6 +526,11 @@ function sunUpdate(dt) {
 
     sky.uniforms.sunPosition.value.copy(sunSphere.position);
 
+}
+function askName(){
+    //This name will be used in the DIS message as marking
+    var name = prompt("Please enter your name! (Max 10 ch.)", "Tank"+rnd);
+    return name.substring(0,10);
 }
 function checkWinner() {
     for (var i = 0; i < tanks.length; ++i) {

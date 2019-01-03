@@ -10,6 +10,8 @@ var entityProto = {
     isAttackedBy: null,
     ray: new THREE.Raycaster(),
     ray1: new THREE.Raycaster(),
+    tankName : null,//change the color later
+    tankNameStr : null,
     init: function () {
         this.id = this.nextID;
         entityProto.nextID += 1;
@@ -79,10 +81,92 @@ var entityProto = {
         tanks.push(this);
 
     },
+        connected : function () {
+        var that = this;
+        this.connectionTimer = setInterval(function(){that.connectionCounter++;},100);
+    },
+    healthBit:function(){
+        //for states that effect entity state appearance
+//        *  Damage           3-4          0=no damage, 1=slight, 2=moderate, 3=destroyed
+        if (this.health < this.armor)//meaning it has taken damage
+        {
+            if (this.health > this.armor*0.75){
+                return 1; //slight damage
+            }
+            else if (this.health >this.armor*0.5){
+                return 2; //moderate damage
+            }else return 3;//destroyed
+        }else return 0; // no damage
+    },
+    setHealthBit:function(){
+        var eA = new dis.DisAppearance(this.espdu.entityAppearance);
+        var damage = this.healthBit();
+        switch (damage){
+            case 1:
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,3);
+                break;
+            case 2:
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,4);
+                break;
+            case 3:
+                eA.entityAppearance=eA.bit_set(eA.entityAppearance,3);
+                this.espdu.entityAppearance=eA.bit_set(eA.entityAppearance,4);
+                break;            
+        }
+//        entityAppearance.set_bit(0,)
+    },
+    createDPDU:function (location, targetID){
+        
+        //create a detonation pdu
+        this.dpdu = new dis.DetonationPdu();
+        //increase the timestamp starting from zero
+        this.dpdu.timestamp++;
+        //this is the firing entity
+        this.dpdu.firingEntityID = this.espdu.entityID;
+
+        if (targetID){
+            //change here
+            //define the enemy entity
+            this.dpdu.targetEntityID.site = targetID.site;
+            this.dpdu.targetEntityID.application = targetID.application;
+            this.dpdu.targetEntityID.entity = targetID.entity;
+        }       
+        //location of the detonation
+        this.dpdu.locationInWorldCoordinates.x = location.x;
+        this.dpdu.locationInWorldCoordinates.y = location.y;
+        this.dpdu.locationInWorldCoordinates.z = location.z;        
+        
+    },
+    sendDPDU: function (){
+        //to count messages of the same type sent 
+        this.detonationCounter++;
+        
+        //if the message is sent more than x times return
+        var x = 1;
+        if(this.detonationCounter > x){
+//            clearInterval(this.detonationSender);
+            this.detonationCounter = 0;
+            return;
+        }
+        
+        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+        var outputStream = new dis.OutputStream(dataBuffer);
+        this.dpdu.encodeToBinaryDIS(outputStream);
+
+        // Trim to fit
+        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+        websocket.send(trimmedData);
+        
+        //send the same detonation message every 50 ms till to counter
+        var that = this;
+        //this.detonationSender = setInterval(that.sendDPDU(),50);
+        setTimeout(that.sendDPDU(),50);
+    },
     createESPDU: function (id, side, type, appNr) {
         //for dis pdu
         this.espdu = new dis.EntityStatePdu();
-        this.espdu.marking.setMarking(side + type + id);
+//        this.espdu.marking.setMarking(side + type + id);
+        this.espdu.marking.setMarking(side[0]+type[0]+"$"+ this.tankNameStr);
         // Entity ID
         this.espdu.entityID.site = 53;
         this.espdu.entityID.application = appNr;
@@ -134,20 +218,36 @@ var entityProto = {
             that.healthBar.position.y = 2.5;
             that.mesh.add(that.healthBar);
             
+            that.pos = that.chassisMesh.position;
             //add the name here
             //but only to the blue ONE
+            //add camera Helper here
             if ( that.side === 'blue'){
-                tankName.scale.set(0.25,0.25,0.25);
-                tankName.position.y = 3;
+                if (!that.remote){
+                    that.tankNameStr = askName();                    
+                }  
+                that.espdu.marking.setMarking(that.espdu.marking.getMarking().split("$")[0]+"$"+that.tankNameStr);
+                var textGeo = new THREE.TextGeometry(that.tankNameStr, {
+                    font: 'helvetiker',
+                    size: 3,
+                    height: 2
+                    }); 
+                that.tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: new THREE.Color( Math.random(), Math.random(), Math.random() ), shading: THREE.FlatShading}));
+                that.tankName.scale.set(0.25,0.25,0.25);
+                that.tankName.position.y = 3;
                 //adjust the position of text to the middle
-                var nameLength = name.toString().length;
+                var nameLength = that.tankNameStr.length;
                 if (nameLength > 10) nameLength = 10;
-                tankName.position.x = -nameLength/4; 
-                that.mesh.add(tankName);
+                that.tankName.position.x = -nameLength/4;
+                that.mesh.add(that.tankName);
+            }
+            if(!that.remote){
+                that.mesh.add(cameraHelpBody);
+                cameraHelpBody.position.set(0,20,-50);
             }
 
 
-            that.pos = that.chassisMesh.position;
+            
             that.wayPoints.push(that.pos);
             collid.push(that.boundingBox);
             if (that.side === "blue" && !that.remote)
@@ -384,9 +484,11 @@ var entityProto = {
         }
         
         //adjust the position of the first persone camera here
-        //work on this
-        cameraFirst.position.set(tank.pos.x,tank.pos.y+20,tank.pos.z-100);
+        cameraHelpVector.setFromMatrixPosition(cameraHelpBody.matrixWorld);
+        cameraFirst.position.lerp(cameraHelpVector, 0.011);
+//        cameraFirst.position.set(tank.pos.x,tank.pos.y+20,tank.pos.z-100);
         cameraFirst.lookAt(tank.mesh.localToWorld(new THREE.Vector3(0,0,20)));
+//        cameraFirst.lookAt(tank.mesh.position);
 
         if (this.shooting)
             this.shoot(dt);
@@ -394,8 +496,24 @@ var entityProto = {
         this.boundingBox.update();
         this.boundingBox.visible = controller.boundingBoxes;
 
+        //update healthbar
         this.healthBar.visible = controller.healthBar;
-        this.healthBar.scale.x = this.health / this.armor;
+        if(!this.remote)
+            this.healthBar.scale.x = this.health / this.armor;
+        else{//drawing healthbar of the remote unit
+            //check if it is set in onmessage
+            switch(this.espdu.entityAppearance){
+                case 8: //third bit is set to 1 meaning slight damage
+                    this.healthBar.scale.x = 0.75;
+                    break;
+                case 16: //forth bit to 1 moderate damage
+                    this.healthBar.scale.x = 0.50;
+                    break;
+                case 24: //third and forth bits to 1 almost destroyed
+                    this.healthBar.scale.x = 0.25;
+                    break;                          
+            }
+        }
         if (this.health / this.armor < .9)
             this.healthBar.material.color.setHex(0Xffff00);
         if (this.health / this.armor < .5)
@@ -492,6 +610,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
     this.applicationNumber = appNr;
     
     this.type = 'tank';
+    //change this back to 10
     this.speed = 10.0;
     this.rotationSpeed = 5.0;
     this.traverseSpeed = 2.0;
@@ -607,7 +726,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
     //assuming that this is the only tank for this remote sim
     tank = this;
 }
-function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
+function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation, nameStr) {
 
     this.type = 'tank';
     this.speed = 2.3;
@@ -631,6 +750,8 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.remoteRay = new THREE.Raycaster();
     this.closeEnough = 1.5;
     this.remote = true;
+    
+    this.tankNameStr = nameStr;
 
     for (i = 0; i < this.ammoNumber; ++i) {
         this.ammo.push(new Ammos(i));
@@ -660,7 +781,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
             target.cloud.stop();
         }, 1200);
 
-        target.health -= this.damage;
+//        target.health -= this.damage;
         target.isAttackedBy = this.id;
 
     };
@@ -791,7 +912,7 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
             that.barrelCloud.stop();
         }, 1200);
 
-        target.health -= this.damage;
+//        target.health -= this.damage;
         target.isAttackedBy = this.id;
 
     };
@@ -822,7 +943,7 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
 
 }
 
-function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
+function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remote) {
 
     this.type = 'how';
     this.speed = 10.0;
@@ -833,6 +954,8 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
     this.armor = 100;
 
     this.side = side;
+    
+    this.remote = remote;
 
     this.range = 150;
     this.minRange = 50;
@@ -931,7 +1054,7 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation) {
         for (var i = 0; i < tanks.length; ++i) {
             this.localVariable = position.distanceTo(tanks[i].pos);
             if (this.localVariable < this.effectRange) {
-                tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
+//                tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
                 tanks[i].isAttackedBy = this.id;
                 if (this.side === "blue")
                     firstBlood = true;

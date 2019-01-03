@@ -23,4 +23,3 @@ Single Player Controls, and markings (name tanks! how to send it over network?, 
 
 Assess damage and draw health bars according to these messages
 
-Change camera position for the remote app
