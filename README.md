@@ -17,9 +17,5 @@ Open the web browser and go to "localhost:8000".
 Open another **window** and go to "localhost:8000/index_remote.html".
 
 ## Things to improve
-Fire PDU, missile will be animation whereas detonation will be broadcast over the network..
-
-Single Player Controls, and markings (name tanks! how to send it over network?, color info must be included)
-
-Assess damage and draw health bars according to these messages
-
+8 char limit, fix question mark characters
+adjust speed
