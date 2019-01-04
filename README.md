@@ -17,5 +17,3 @@ Open the web browser and go to "localhost:8000".
 Open another **window** and go to "localhost:8000/index_remote.html".
 
 ## Things to improve
-8 char limit, fix question mark characters
-adjust speed

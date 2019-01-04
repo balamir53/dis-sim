@@ -68,17 +68,17 @@
         <script type="text/javascript">
 
             //webserver
-            /** Where the web page goes to contact a websocket server. NOTE: this points
-             * at localhost (the host where the page is loaded) by default. This means
-             * you have to have a websocket server running on localhost, which is fine
-             * for development. In a production environment it's more likely that you
-             * want to point this at a shared server, such as "ws://track.nps.edu" or
-             * "ws://172.20.82.112"
-             * 
-             * @type String
-             */
-//            var WEBSOCKET_URL = "ws://localhost:8282";
-            var WEBSOCKET_URL = "ws://192.168.0.15:8282";
+//            /** Where the web page goes to contact a websocket server. NOTE: this points
+//             * at localhost (the host where the page is loaded) by default. This means
+//             * you have to have a websocket server running on localhost, which is fine
+//             * for development. In a production environment it's more likely that you
+//             * want to point this at a shared server, such as "ws://track.nps.edu" or
+//             * "ws://172.20.82.112"
+//             * 
+//             * @type String
+//             */
+            var WEBSOCKET_URL = "ws://localhost:8282";
+//            var WEBSOCKET_URL = "ws://172.20.10.5:8282";
 
             /** The TCP-like websocket we use for communications */
             var websocket;
@@ -87,7 +87,7 @@
 
             // Every few seconds send an update of our units
             // heartbeat function is in main.js
-            window.setInterval(heartbeat, 10);
+            window.setInterval(heartbeat, 100);
             
             //prompt a form asking user name
             var rnd = Math.floor((Math.random() * 100));

@@ -10,6 +10,11 @@ var entityProto = {
     isAttackedBy: null,
     ray: new THREE.Raycaster(),
     ray1: new THREE.Raycaster(),
+    connectionTimer : null,
+    connectionCounter : 0,
+    detonationCounter: 0,
+    //detonationSender:null,
+    remote : false,
     tankName : null,//change the color later
     tankNameStr : null,
     init: function () {
@@ -81,7 +86,7 @@ var entityProto = {
         tanks.push(this);
 
     },
-        connected : function () {
+    connected : function () {
         var that = this;
         this.connectionTimer = setInterval(function(){that.connectionCounter++;},100);
     },
@@ -166,7 +171,7 @@ var entityProto = {
         //for dis pdu
         this.espdu = new dis.EntityStatePdu();
 //        this.espdu.marking.setMarking(side + type + id);
-        this.espdu.marking.setMarking(side[0]+type[0]+"$"+ this.tankNameStr);
+        this.espdu.marking.setMarking(side[0]+type[0]+"$"+ this.tankNameStr+"&");
         // Entity ID
         this.espdu.entityID.site = 53;
         this.espdu.entityID.application = appNr;
@@ -216,8 +221,7 @@ var entityProto = {
 
             that.healthBar = new THREE.Mesh(new THREE.BoxGeometry(2, .2, .2), new THREE.MeshBasicMaterial({color: 0x0000ff}));
             that.healthBar.position.y = 2.5;
-            that.mesh.add(that.healthBar);
-            
+            that.mesh.add(that.healthBar);            
             that.pos = that.chassisMesh.position;
             //add the name here
             //but only to the blue ONE
@@ -227,7 +231,7 @@ var entityProto = {
                     that.tankNameStr = askName();                    
                 }  
                 that.espdu.marking.setMarking(that.espdu.marking.getMarking().split("$")[0]+"$"+that.tankNameStr);
-                var textGeo = new THREE.TextGeometry(that.tankNameStr, {
+                var textGeo = new THREE.TextGeometry(that.tankNameStr.split("&")[0], {
                     font: 'helvetiker',
                     size: 3,
                     height: 2
@@ -245,8 +249,6 @@ var entityProto = {
                 that.mesh.add(cameraHelpBody);
                 cameraHelpBody.position.set(0,20,-50);
             }
-
-
             
             that.wayPoints.push(that.pos);
             collid.push(that.boundingBox);
@@ -459,6 +461,10 @@ var entityProto = {
 
     },
     die: function () {
+        //stop connection timer if any
+        if(this.connectionTimer){
+            clearInterval(this.connectionTimer);
+        }
         checkWinner();
         this.mesh.visible = false;
         if (this.type !== "inf")
@@ -482,10 +488,16 @@ var entityProto = {
 
             return;
         }
-        
+
+        //check connection status of the remote unit
+        if(this.connectionTimer && this.connectionCounter>50){
+            this.state = 'dead';
+            this.die();
+            return;
+        }        
         //adjust the position of the first persone camera here
         cameraHelpVector.setFromMatrixPosition(cameraHelpBody.matrixWorld);
-        cameraFirst.position.lerp(cameraHelpVector, 0.011);
+        cameraFirst.position.lerp(cameraHelpVector, 0.005);
 //        cameraFirst.position.set(tank.pos.x,tank.pos.y+20,tank.pos.z-100);
         cameraFirst.lookAt(tank.mesh.localToWorld(new THREE.Vector3(0,0,20)));
 //        cameraFirst.lookAt(tank.mesh.position);
@@ -504,17 +516,22 @@ var entityProto = {
             //check if it is set in onmessage
             switch(this.espdu.entityAppearance){
                 case 8: //third bit is set to 1 meaning slight damage
-                    this.healthBar.scale.x = 0.75;
+                    //this.healthBar.scale.x = 0.75;
+                    this.health = this.armor*0.75;
                     break;
                 case 16: //forth bit to 1 moderate damage
-                    this.healthBar.scale.x = 0.50;
+                    this.health = this.armor*0.5; 
+//                    this.healthBar.scale.x = 0.50;
+//                    this.healthBar.material.color.setHex(0Xffff00);
                     break;
                 case 24: //third and forth bits to 1 almost destroyed
-                    this.healthBar.scale.x = 0.25;
+                    this.health = this.armor*0.25; 
+//                  this.healthBar.scale.x = 0.25;
+//                  this.healthBar.material.color.setHex(0Xff0000);
                     break;                          
             }
         }
-        if (this.health / this.armor < .9)
+        if (this.health / this.armor < .99)
             this.healthBar.material.color.setHex(0Xffff00);
         if (this.health / this.armor < .5)
             this.healthBar.material.color.setHex(0Xff0000);
@@ -603,7 +620,7 @@ var entityProto = {
 
     }
 };
-function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
+function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr, remote) {
     
     
     //*****************
@@ -623,6 +640,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
     this.range = 30;
     this.health = this.armor;
     this.damage = 25;
+	this.remote = remote;
 
     this.ammo = [];
     this.ammoNumber = 2;
@@ -658,6 +676,14 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation,appNr) {
         //this is where we decrease the health of the damaged unit
 //        target.health -= this.damage;
         target.isAttackedBy = this.id;
+		//rather than decreasing the health it will send detonation pdu (or pdus)
+        //where do we send detonation pdu, in hearthbeat?
+        //or do we send it just one time or several times with same timestamp
+        if(this.remote) return;
+        if (target.remote){
+            this.createDPDU(target.pos, target.espdu.entityID);
+            this.sendDPDU();
+        }else target.health -= this.damage;
 
     };
     this.shoot = function (dt) {
@@ -847,7 +873,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation, na
     this.init();
 
 }
-function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
+function Infantry(side, scene, loc, loader, collid, selectables, yRotation, remote) {
 
     this.type = 'inf';
     this.speed = 15.0;
@@ -864,6 +890,7 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation) {
     this.range = 20;
     this.health = this.armor;
     this.damage = 10;
+	this.remote = remote;
 
     this.barrelCloud = {cloud: new THREE.Object3D()};
     this.barrelCloud.cloud.visible = false;
@@ -1050,18 +1077,24 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
 
         }, 2000);
 
+//you dont need to check other entities distance to the target position
+//just send dpdu
+        this.createDPDU(position);
+        this.sendDPDU();
+//        for (var i = 0; i < tanks.length; ++i) {
+//            this.localVariable = position.distanceTo(tanks[i].pos);
+//            if (this.localVariable < this.effectRange) {                
+////                if (target.remote){
+////                    this.createDPDU(target.pos, target.espdu.entityID);
+//                this.createDPDU(target.pos, target.espdu.entityID);
+//                this.sendDPDU();}
+////                }else tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
+//                tanks[i].isAttackedBy = this.id;
+//                //console.log(tanks[i].health)
+//            }
+            if (this.side === "blue")
+                firstBlood = true;
 
-        for (var i = 0; i < tanks.length; ++i) {
-            this.localVariable = position.distanceTo(tanks[i].pos);
-            if (this.localVariable < this.effectRange) {
-//                tanks[i].health -= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
-                tanks[i].isAttackedBy = this.id;
-                if (this.side === "blue")
-                    firstBlood = true;
-                //console.log(tanks[i].health)
-            }
-
-        }
         if (firstBlood) {
             for (var i = 0; i < tanks.length; ++i) {
                 if (tanks[i].side === "red" && tanks[i].type === "how" && tanks[i].range < 200)
@@ -1143,7 +1176,7 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
     };
     this.init();
 }
-function Uav(side, scene, loc, loader, collid, selectables, yRotation) {
+function Uav(side, scene, loc, loader, collid, selectables, yRotation, remote) {
 
     //remote uav
     this.remote = true;
@@ -1154,15 +1187,16 @@ function Uav(side, scene, loc, loader, collid, selectables, yRotation) {
     this.traverseSpeed = 2.0;
     this.elevateSpeed = 0.0;
 
-    this.armor = 75;
+    this.armor = 1000;
 
     this.side = side;
 
     this.barrelPos = new THREE.Vector3(0, 0, 1);
 
-    this.range = 20;
+    this.range = 100;
     this.health = this.armor;
     this.damage = 10;
+	this.remote = remote;
 
     this.barrelCloud = {cloud: new THREE.Object3D()};
     this.barrelCloud.cloud.visible = false;
@@ -1243,11 +1277,16 @@ function Uav(side, scene, loc, loader, collid, selectables, yRotation) {
     this.move = function (dt) {
         //do nothing
     };
-    this.updateUAV = function (updatedLocation) {
+    this.updateUAV = function (updatedLocation, orientation) {
         if (!this.mesh)
             return;
-        this.chassisMesh.position.set(updatedLocation.x - 5, -updatedLocation.y - 90, updatedLocation.z + 5);
-        //this.chassisMesh.translateZ(5);
+        //this.chassisMesh.position.set(updatedLocation.x - 5, -updatedLocation.y - 90, updatedLocation.z + 5);
+        this.chassisMesh.position.set(-updatedLocation.x, -updatedLocation.y+90, updatedLocation.z);
+        
+        this.chassisMesh.rotation.set(orientation.x, orientation.y, orientation.z);
+        
+        
+        
     };
 
 }

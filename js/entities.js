@@ -15,11 +15,13 @@ var entityProto = {
     detonationCounter: 0,
     //detonationSender:null,
     remote : false,
+    tankName : null,//change the color later
+    tankNameStr : null,
     init: function () {
         this.id = this.nextID;
         entityProto.nextID += 1;
 
-        this.createESPDU(this.id, this.side, this.type);
+        this.createESPDU(this.id, this.side, this.type, this.applicationNumber);
         this.terrainMaterial = 0;
         this.normalY = 1;
         this.wayPoints = [];
@@ -165,13 +167,14 @@ var entityProto = {
         //this.detonationSender = setInterval(that.sendDPDU(),50);
         setTimeout(that.sendDPDU(),50);
     },
-    createESPDU: function (id, side, type) {
+    createESPDU: function (id, side, type, appNr) {
         //for dis pdu
         this.espdu = new dis.EntityStatePdu();
-        this.espdu.marking.setMarking(side[0] + type[0] + id);
+//        this.espdu.marking.setMarking(side + type + id);
+        this.espdu.marking.setMarking(side[0]+type[0]+"$"+ this.tankNameStr+"&");
         // Entity ID
         this.espdu.entityID.site = 53;
-        this.espdu.entityID.application = 17;
+        this.espdu.entityID.application = 17; //? need to change?
         this.espdu.entityID.entity = Math.round(Math.random() * 16000); // Unique (ish) ID
 
         // What type of entity this is--in this case a dismounted infantry guy
@@ -198,7 +201,7 @@ var entityProto = {
             //try to align it with the terrain height as soon as it is generated
             if (that.type !== 'uav') {
                 pointUp.copy(that.chassisMesh.position);
-                pointUp.setY(that.chassisMesh.position.y + 10);
+                pointUp.setY(that.chassisMesh.position.y + 50);
 
                 that.ray1.set(pointUp, toEarth);
                 earthLevel = that.ray1.intersectObject(plane);
@@ -209,7 +212,7 @@ var entityProto = {
                 that.chassisMesh.scale.set(5, 5, 5);
             }
             if (yRotation)
-                that.chassisMesh.rotation.y  = yRotation;
+                that.chassisMesh.rotation.y = yRotation;
             that.chassisMesh.castShadow = true;
             that.mesh = that.chassisMesh;
 
@@ -219,8 +222,34 @@ var entityProto = {
             that.healthBar = new THREE.Mesh(new THREE.BoxGeometry(2, .2, .2), new THREE.MeshBasicMaterial({color: 0x0000ff}));
             that.healthBar.position.y = 2.5;
             that.mesh.add(that.healthBar);
-
             that.pos = that.chassisMesh.position;
+            //add the name here
+            //but only to the blue ONE
+            //add camera Helper here
+            if ( that.side === 'blue'){
+                if (!that.remote){
+                    that.tankNameStr = askName();                    
+                }  
+                that.espdu.marking.setMarking(that.espdu.marking.getMarking().split("$")[0]+"$"+that.tankNameStr);
+                var textGeo = new THREE.TextGeometry(that.tankNameStr.split("&")[0], {
+                    font: 'helvetiker',
+                    size: 3,
+                    height: 2
+                    }); 
+                that.tankName = new THREE.Mesh(textGeo, new THREE.MeshPhongMaterial({color: new THREE.Color( Math.random(), Math.random(), Math.random() ), shading: THREE.FlatShading}));
+                that.tankName.scale.set(0.25,0.25,0.25);
+                that.tankName.position.y = 3;
+                //adjust the position of text to the middle
+                var nameLength = that.tankNameStr.length;
+                if (nameLength > 10) nameLength = 10;
+                that.tankName.position.x = -nameLength/4;
+                that.mesh.add(that.tankName);
+            }
+			// not good for the server side app
+            //if(!that.remote){ 
+            //    that.mesh.add(cameraHelpBody);
+            //    cameraHelpBody.position.set(0,20,-50);
+            //}
             that.wayPoints.push(that.pos);
             collid.push(that.boundingBox);
             if (that.side === "blue" && !that.remote)
@@ -469,6 +498,13 @@ var entityProto = {
             return;
         }
 
+        //adjust the position of the first persone camera here
+        //cameraHelpVector.setFromMatrixPosition(cameraHelpBody.matrixWorld);
+        //cameraFirst.position.lerp(cameraHelpVector, 0.005);
+//        cameraFirst.position.set(tank.pos.x,tank.pos.y+20,tank.pos.z-100);
+        //cameraFirst.lookAt(tank.mesh.localToWorld(new THREE.Vector3(0,0,20)));
+//        cameraFirst.lookAt(tank.mesh.position);
+
         if (this.shooting)
             this.shoot(dt);
 
@@ -493,14 +529,14 @@ var entityProto = {
                     break;
                 case 24: //third and forth bits to 1 almost destroyed
                     this.health = this.armor*0.25; 
-//                    this.healthBar.scale.x = 0.25;
-//                    this.healthBar.material.color.setHex(0Xff0000);
+//                  this.healthBar.scale.x = 0.25;
+//                  this.healthBar.material.color.setHex(0Xff0000);
                     break;                          
             }
         }
         if (this.health / this.armor < .99)
             this.healthBar.material.color.setHex(0Xffff00);
-        if (this.health / this.armor < .25)
+        if (this.health / this.armor < .5)
             this.healthBar.material.color.setHex(0Xff0000);
 
         //clouds
@@ -644,9 +680,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation, remote) 
         if (target.remote){
             this.createDPDU(target.pos, target.espdu.entityID);
             this.sendDPDU();
-        }else target.health -= this.damage;
-        
-        
+        }else target.health -= this.damage;             
         
 
     };
@@ -715,7 +749,7 @@ function Tank(side, scene, loc, loader, collid, selectables, yRotation, remote) 
 
 }
 //this object will be deprecated
-function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
+function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation, nameStr) {
 
     this.type = 'tank';
     this.speed = 2.3;
@@ -740,6 +774,7 @@ function RemoteTank(side, scene, loc, loader, collid, selectables, yRotation) {
     this.remoteRay = new THREE.Raycaster();
     this.closeEnough = 1.5;
     this.remote = true;
+    this.tankNameStr = nameStr;
 
     for (i = 0; i < this.ammoNumber; ++i) {
         this.ammo.push(new Ammos(i));
@@ -902,7 +937,7 @@ function Infantry(side, scene, loc, loader, collid, selectables, yRotation, remo
             that.barrelCloud.stop();
         }, 1200);
 
-        target.health -= this.damage;
+        //target.health -= this.damage;
         target.isAttackedBy = this.id;
 
     };
@@ -944,6 +979,7 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
     this.armor = 100;
 
     this.side = side;
+	this.remote = remote;
 
     this.range = 150;
     this.minRange = 50;
@@ -951,7 +987,6 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
     this.effectRange = 20;
     this.damage = 25;
     
-    this.remote = remote;
 
     //engaging and shootin
     this.heightPoint = new THREE.Vector3();
@@ -1057,7 +1092,6 @@ function Howitzer(side, scene, loc, loader, collid, selectables, yRotation,remot
 //            }
             if (this.side === "blue")
                 firstBlood = true;
-
         if (firstBlood) {
             for (var i = 0; i < tanks.length; ++i) {
                 if (tanks[i].side === "red" && tanks[i].type === "how" && tanks[i].range < 200)

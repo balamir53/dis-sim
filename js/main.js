@@ -45,9 +45,12 @@ var heartBeatCounter = 0;
 var oneTime = true;
 var remoteIDDictionary = {};
 var rangeCoordinates = new dis.RangeCoordinates(36.6, -121.9, 1.0);
-var remoteDistance = 1;
+var remoteDistance = 3;
 var remoteUnitsNumber = 0;
 var myHow;
+var cameraHelpVector = new THREE.Vector3();
+var cameraHelpBody = new THREE.Object3D();
+
 //var remoteRay = new THREE.Raycaster();
 //var remoteLocation;
 
@@ -93,19 +96,18 @@ function networkSetup()
         //mandrake code is beginning
         // convert from binary to javascript object
         var inputStream = new dis.InputStream(evt.data);
-        var disMessage = new dis.EntityStatePdu();
-        disMessage.initFromBinaryDIS(inputStream);
+        inputStream.currentPosition += 2;
+        var pduType = inputStream.readUByte();
+//        var disMessage = new dis.EntityStatePdu();
+//        disMessage.initFromBinaryDIS(inputStream);
 
-        switch (disMessage.pduType)
+        switch (pduType)
         {
             case 1:
-                //what to include in the state information other than location
-                //and orientation
-                //marking for sure which has to be handled at the start of the 
-                //simulation
-                //health, namely the general state of the entity
-                //
-                //
+                inputStream.currentPosition = 0;
+                var disMessage = new dis.EntityStatePdu();
+                disMessage.initFromBinaryDIS(inputStream);
+                //console.log("ESPDU");
       
                 var entityID = JSON.stringify(disMessage.entityID.entity);
                 
@@ -116,20 +118,38 @@ function networkSetup()
                 //needed for the old simulation; no more
                 if (entityID === "43" || entityID === "0" || entityID === "123")
                     return;
-                
-                
+               
                 //create the connected entity for the first time!!
                 if (remoteIDDictionary[entityID] === undefined) {
                     //coordinate conversion doesnt seem to work precisely
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
-                    
+                    var marking = disMessage.marking.getMarking();
+//                    remoteIDDictionary[entityID].tankNameStr = marking.split("$").pop();
+                    if (marking.substring(0,1)==="b")
+                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI,marking.split("$").pop());
+                    else{
+                        switch (marking.substring(1,2)){
+                            case 't':
+                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                break;
+                            case 'i':
+                                remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                break;
+                            case 'h':
+                                remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables,false,true);
+                                break;
+                            default:
+                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                        }
+
+                    }                  
                     //for old sim, UAV will be deprecated
-                    if (entityID === "25") {
-                        remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
-                    } else {
-                        remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
-                    }
+                    //if (entityID === "25") {
+                    //    remoteIDDictionary[entityID] = new Uav('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
+                    //} else {
+                    //    remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables, Math.PI, true);
+                    //}
                     //here you should initiate remote tank with the proper variables !!
                     remoteIDDictionary[entityID].espdu.entityID.entity = entityID;
                     //
@@ -190,63 +210,33 @@ function networkSetup()
                 break;
 
             case 3:
-                //console.log("Detonation PDU");
-                //assessDamageToOurEntities(disMessage);
-                //entityLocation
-
-                var entityID = JSON.stringify(disMessage.exerciseID);
-                entityID += 1;
-                if (remoteIDDictionary[entityID] === undefined) {
-                    //remoteIDDictionary[entityID] = new Ammo(251);
-                    remoteIDDictionary[entityID] = "alreadyShot";
-                    oneTime = true;
-                }
-                if(remoteIDDictionary[entityID] && oneTime)
-                {   
-                    
-                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
-                    //fix coordinate matching
-                    var localVector = new THREE.Vector3(localCoordinates.x-5, localCoordinates.y-90, localCoordinates.z+5);
-                    var minDist = 100000;
-                    var target;
-
-                    for (var tank in tanks) {
-                        var dist = localVector.distanceTo(tanks[tank].chassisMesh.position);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            target = tanks[tank];
-                        }
-                    }
-
-                    //hittin and cloudin
-//                    target.cloud.cloud.position.copy(target.pos);
-//                    target.cloud.cloud.visible = true;
-//                    target.cloud.start();
-//                    var myUav = remoteIDDictionary["25"];
-//                    myUav.barrelCloud.cloud.position.copy(target.chassisMesh.position);
-//                    myUav.barrelCloud.cloud.visible = true;
-//                    myUav.barrelCloud.start();
-                    myHow.blastCloud.cloud.position.copy(target.chassisMesh.position);
-                    myHow.blastCloud.cloud.visible = true;
-                    myHow.blastCloud.start();
-
-                    //sound
-                    var source = audioContext.createBufferSource(); // creates a sound source
-                    source.buffer = explosionBuffer;
-                    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
-                    if (controller.sound)
-                        source.start(0);
-
-                    setTimeout(function () {
-//                        target.cloud.cloud.visible = false;
-//                        target.cloud.stop();
-                        myHow.blastCloud.cloud.visible = false;
-                        myHow.blastCloud.stop();
-                    }, 1500);
-
-                    target.health -= 200;
-                    //target.isAttackedBy = this.id;
-                    oneTime = false;
+                inputStream.currentPosition = 0;
+                var disMessage = new dis.DetonationPdu();
+                disMessage.initFromBinaryDIS(inputStream);
+                //receiving pdu
+                var shooterID = JSON.stringify(disMessage.firingEntityID.entity);
+                var targetID = JSON.stringify(disMessage.targetEntityID.entity);
+                                
+                var shooter = remoteIDDictionary[shooterID];
+                
+                switch(shooter.type){
+                    case 'tank':
+                        //if the shooter tank doesnt hit me than return
+                        if (tank.espdu.entityID.entity !== targetID) return;
+                        tank.health -= 25; //usual tank damage
+                        break;
+                    case 'how':
+                        //detonation location
+                        var detLoc = new THREE.Vector3(disMessage.locationInWorldCoordinates.x, disMessage.locationInWorldCoordinates.y,disMessage.locationInWorldCoordinates.z );
+                         //-= this.damage * (this.effectRange - this.localVariable) / this.effectRange;
+                        var damage = 25 * (20 - detLoc.distanceTo(tank.mesh.position)) / 20;
+                        if (damage < 0) damage = 0;
+                        tank.health -= damage;
+                        break;
+                    case 'inf':
+                        if (tank.espdu.entityID.entity !==targetID) return;
+                        tank.health -= 10; //usual infantry damage
+                        break;  
                 }
 
                 break;

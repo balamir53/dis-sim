@@ -48,6 +48,7 @@ var remoteIDDictionary = {};
 var rangeCoordinates = new dis.RangeCoordinates(36.6, -121.9, 1.0);
 var remoteDistance = 3;
 var remoteUnitsNumber = 0;
+var myHow;
 
 var cameraHelpVector = new THREE.Vector3();
 var cameraHelpBody = new THREE.Object3D();
@@ -111,11 +112,19 @@ function networkSetup()
                 //console.log("ESPDU");
                 var entityID = JSON.stringify(disMessage.entityID.entity);
                 
+                //update timestamp here; if it is not likely to receive messages delete it from the simulation
+                // where to check ??
+//                remoteIDDictionary[entityID].espdu.timestamp = disMessage.timestamp;
+                
+                //needed for the old simulation; no more
+                if (entityID === "43" || entityID === "0" || entityID === "123")
+                    return;                
+                
+                //create the connected entity for the first time!!
                 //this is 17 for the enemy units from the server side
                 //and random app numbers for other clients
                 //there is no control mechanism if two same entity numbers co exist
                 var entityApp = JSON.stringify(disMessage.entityID.application);
-                
                 if (remoteIDDictionary[entityID] === undefined) {
 
                     var localCoordinates = disMessage.entityLocation;
@@ -126,10 +135,10 @@ function networkSetup()
                     else{
                         switch (marking.substring(1,2)){
                             case 't':
-                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                remoteIDDictionary[entityID] = new RemoteTank('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables,false,entityApp,true);
                                 break;
                             case 'i':
-                                remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables);
+                                remoteIDDictionary[entityID] = new Infantry('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables,false,true);
                                 break;
                             case 'h':
                                 remoteIDDictionary[entityID] = new Howitzer('red', scene, new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z), manager, entitiesBoundingBox, selectables,false,true);
@@ -139,7 +148,11 @@ function networkSetup()
                         }
 
                     }                     
-                        
+                                            //here you should initiate remote tank with the proper variables !!
+                    remoteIDDictionary[entityID].espdu.entityID.entity = entityID;
+                    //
+                    //this will start counter in the update function to check connection status of the remote units
+                    remoteIDDictionary[entityID].connected();
                     
                     remoteIDDictionary[entityID].remoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     //remoteIDDictionary[entityID] = new RemoteTank('blue', scene, new THREE.Vector3(-160, 0, 258), manager, entitiesBoundingBox, selectables, Math.PI);
@@ -147,10 +160,17 @@ function networkSetup()
                 }
                 else {
 
+                    var myRemote = remoteIDDictionary[entityID];          
+                    //update timestamp
+                    myRemote.espdu.timestamp = disMessage.timestamp;
+                    //the remote app may be open for a while
+                    //myRemote.espdu.timestamp++;
+                    //reset the timer
+                    myRemote.connectionCounter = 0;
 //                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
                     var localCoordinates = disMessage.entityLocation;
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
-                    var myRemote = remoteIDDictionary[entityID];
+                    
 
                     var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
                     if (dist > remoteDistance) {
@@ -168,7 +188,7 @@ function networkSetup()
                           //try to teleport the tank every time
                           myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                           myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
-
+						  myRemote.espdu.entityAppearance = disMessage.entityAppearance;
                     }
                 }
                 break;
@@ -206,47 +226,6 @@ function networkSetup()
                         tank.health -= 10; //usual infantry damage
                         break;                        
                 }
-
-//                if(remoteIDDictionary[entityID] && oneTime)
-//                {   
-//                    
-////                    var localCoordinates = rangeCoordinates.ECEFObjectToENU(disMessage.entityLocation);
-//                    var localCoordinates = disMessage.entityLocation;
-//                    //fix coordinate matching
-//                    var localVector = new THREE.Vector3(localCoordinates.x-5, localCoordinates.y-90, localCoordinates.z+5);
-//                    var minDist = 100000;
-//                    var target;
-//
-//                    for (var tank in tanks) {
-//                        var dist = localVector.distanceTo(tanks[tank].chassisMesh.position);
-//                        if (dist < minDist) {
-//                            minDist = dist;
-//                            target = tanks[tank];
-//                        }
-//                    }
-//
-//                    myHow.blastCloud.cloud.position.copy(target.chassisMesh.position);
-//                    myHow.blastCloud.cloud.visible = true;
-//                    myHow.blastCloud.start();
-//
-//                    //sound
-//                    var source = audioContext.createBufferSource(); // creates a sound source
-//                    source.buffer = explosionBuffer;
-//                    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
-//                    if (controller.sound)
-//                        source.start(0);
-//
-//                    setTimeout(function () {
-////                        target.cloud.cloud.visible = false;
-////                        target.cloud.stop();
-//                        myHow.blastCloud.cloud.visible = false;
-//                        myHow.blastCloud.stop();
-//                    }, 1500);
-//
-//                    target.health -= 200;
-//                    //target.isAttackedBy = this.id;
-//                    oneTime = false;
-//                }
 
                 break;
 
@@ -529,10 +508,12 @@ function sunUpdate(dt) {
 }
 function askName(){
     //This name will be used in the DIS message as marking
-    var name = prompt("Please enter your name! (Max 10 ch.)", "Tank"+rnd);
-    return name.substring(0,10);
+    var name = prompt("Please enter your name! (Max 7 ch.)", "Tank"+rnd);
+    return name.substring(0,7)+"&";
 }
 function checkWinner() {
+    // for the network app dont check it
+    return;
     for (var i = 0; i < tanks.length; ++i) {
         if (tanks[i].side === "red" && tanks[i].state !== "dead")
             break;
