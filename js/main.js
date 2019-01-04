@@ -116,8 +116,8 @@ function networkSetup()
 //                remoteIDDictionary[entityID].espdu.timestamp = disMessage.timestamp;
                 
                 //needed for the old simulation; no more
-                if (entityID === "43" || entityID === "0" || entityID === "123")
-                    return;
+//                if (entityID === "43" || entityID === "0" || entityID === "123")
+//                    return;
                
                 //create the connected entity for the first time!!
                 if (remoteIDDictionary[entityID] === undefined) {
@@ -177,6 +177,7 @@ function networkSetup()
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     if (entityID !== "25") {
                         
+                        myRemote.espdu.entityAppearance = disMessage.entityAppearance;
                         var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
                         if (dist > remoteDistance) {
 
@@ -192,7 +193,7 @@ function networkSetup()
 //                            }
                               myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                               myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
-                              myRemote.espdu.entityAppearance = disMessage.entityAppearance;
+                              
                               
                         }
                     } else {
@@ -215,15 +216,21 @@ function networkSetup()
                 disMessage.initFromBinaryDIS(inputStream);
                 //receiving pdu
                 var shooterID = JSON.stringify(disMessage.firingEntityID.entity);
-                var targetID = JSON.stringify(disMessage.targetEntityID.entity);
-                                
                 var shooter = remoteIDDictionary[shooterID];
-                
+                if(shooter === undefined) return;               
+
+                //var targetID = JSON.stringify(disMessage.targetEntityID.entity);          
+
                 switch(shooter.type){
                     case 'tank':
                         //if the shooter tank doesnt hit me than return
-                        if (tank.espdu.entityID.entity !== targetID) return;
-                        tank.health -= 25; //usual tank damage
+                        //if (tank.espdu.entityID.entity !== targetID) return;
+                        for (var i = 0; i<tanks.length;++i){
+                            if (tanks[i].espdu.entityID.entity === disMessage.targetEntityID.entity){
+                                tanks[i].health -= 25; //usual tank damage
+                                return;
+                            }                                
+                        }                        
                         break;
                     case 'how':
                         //detonation location

@@ -171,7 +171,7 @@ function networkSetup()
                     var localCoordinates = disMessage.entityLocation;
                     var newRemoteLocation = new THREE.Vector3(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                     
-
+                    myRemote.espdu.entityAppearance = disMessage.entityAppearance;
                     var dist = myRemote.remoteLocation.distanceTo(newRemoteLocation);
                     if (dist > remoteDistance) {
 
@@ -188,7 +188,7 @@ function networkSetup()
                           //try to teleport the tank every time
                           myRemote.chassisMesh.position.set(localCoordinates.x, localCoordinates.y, localCoordinates.z);
                           myRemote.chassisMesh.rotation.set(disMessage.entityOrientation.phi, disMessage.entityOrientation.psi, disMessage.entityOrientation.theta);
-						  myRemote.espdu.entityAppearance = disMessage.entityAppearance;
+			  
                     }
                 }
                 break;
